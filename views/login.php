@@ -68,27 +68,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="bg-light">
+<body style="background: #f9f9fa;">
     <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
         <div class="row w-100 justify-content-center">
             <div class="col-12 col-sm-8 col-md-6 col-lg-4">
-                <div class="card border-0 shadow">
-                    <div class="card-body p-4 p-lg-5">
+                <div class="card" style="border: none; border-radius: 20px;">
+                    <div class="card-body" style="padding: 40px;">
                         <div class="text-center mb-4">
-                            <div class="fs-1 mb-3">📚</div>
-                            <h1 class="h3 fw-bold text-primary">No9ati</h1>
-                            <p class="text-muted mb-0">Connectez-vous à votre espace enseignant</p>
+                            <div style="width: 64px; height: 64px; background: #1c1c1c; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                </svg>
+                            </div>
+                            <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px;">No9ati</h1>
+                            <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 0;">Connectez-vous à votre espace enseignant</p>
                         </div>
                         
                         <?php if ($error): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
                                 <?php echo htmlspecialchars($error); ?>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
                         <?php endif; ?>
                         
                         <?php if ($success): ?>
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
                                 <?php echo htmlspecialchars($success); ?>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
@@ -96,30 +101,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         <form method="POST" action="index.php?page=login">
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" id="email" name="email" class="form-control form-control-lg" 
+                                <label for="email" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Email</label>
+                                <input type="email" id="email" name="email" class="form-control" 
                                        value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" 
-                                       placeholder="votre@email.com" required>
+                                       placeholder="votre@email.com" required
+                                       style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                             </div>
                             
                             <div class="mb-4">
-                                <label for="password" class="form-label">Mot de passe</label>
-                                <input type="password" id="password" name="password" class="form-control form-control-lg" 
-                                       placeholder="Votre mot de passe" required>
+                                <label for="password" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Mot de passe</label>
+                                <input type="password" id="password" name="password" class="form-control" 
+                                       placeholder="Votre mot de passe" required
+                                       style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                             </div>
                             
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
+                                <button type="submit" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 500;">
                                     Se connecter
                                 </button>
                             </div>
                         </form>
                         
-                        <hr class="my-4">
+                        <hr style="border-color: rgba(0,0,0,0.1); margin: 24px 0;">
                         
                         <div class="text-center">
-                            <p class="mb-0">Pas encore de compte ? 
-                                <a href="index.php?page=register" class="text-decoration-none">
+                            <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 0;">Pas encore de compte ? 
+                                <a href="index.php?page=register" style="color: #1c1c1c; font-weight: 500; text-decoration: none;">
                                     Créer un compte
                                 </a>
                             </p>

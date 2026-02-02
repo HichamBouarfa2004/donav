@@ -49,29 +49,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="bg-light">
+<body style="background: #f9f9fa;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 250px; padding-top: 70px; min-height: 100vh;">
+    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
         <?php include 'views/partials/header.php'; ?>
 
-        <main class="container-fluid py-4">
+        <main class="container-fluid" style="padding: 28px;">
             <div class="row mb-4">
                 <div class="col-12">
-                    <h1 class="h3 mb-1">Mon Profil</h1>
-                    <p class="text-muted mb-0">Gérez vos informations personnelles et paramètres de compte</p>
+                    <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px;">Mon Profil</h1>
+                    <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 0;">Gérez vos informations personnelles et paramètres de compte</p>
                 </div>
             </div>
 
             <?php if ($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($error); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
             <?php endif; ?>
             
             <?php if ($success): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($success); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
@@ -80,28 +80,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row g-4">
                 <!-- Profile Information -->
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Informations personnelles</h2>
+                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Informations personnelles</h2>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <form method="POST">
                                 <div class="mb-3">
-                                    <label for="nom" class="form-label">Nom complet</label>
+                                    <label for="nom" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Nom complet</label>
                                     <input type="text" id="nom" name="nom" class="form-control" 
-                                           value="<?php echo htmlspecialchars($teacher->nom); ?>" required>
+                                           value="<?php echo htmlspecialchars($teacher->nom); ?>" required
+                                           style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="email" class="form-label">Adresse email</label>
+                                    <label for="email" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Adresse email</label>
                                     <input type="email" id="email" name="email" class="form-control" 
-                                           value="<?php echo htmlspecialchars($teacher->email); ?>" required>
+                                           value="<?php echo htmlspecialchars($teacher->email); ?>" required
+                                           style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                 </div>
 
                                 <!-- Activity titles are now managed per-class and selected during certificate generation -->
 
                                 <div class="d-grid">
-                                    <button type="submit" name="update_profile" class="btn btn-primary">
+                                    <button type="submit" name="update_profile" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 500;">
+                                        <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                            <polyline points="7 3 7 8 15 8"></polyline>
+                                        </svg>
                                         Mettre à jour le profil
                                     </button>
                                 </div>
@@ -112,26 +119,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- Password Change -->
                 <div class="col-12 col-lg-6">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Changer le mot de passe</h2>
+                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Changer le mot de passe</h2>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <form method="POST">
                                 <div class="mb-3">
-                                    <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                                    <label for="new_password" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Nouveau mot de passe</label>
                                     <input type="password" id="new_password" name="new_password" class="form-control" 
-                                           placeholder="Minimum 6 caractères" required>
+                                           placeholder="Minimum 6 caractères" required
+                                           style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                 </div>
 
                                 <div class="mb-4">
-                                    <label for="confirm_password" class="form-label">Confirmer le mot de passe</label>
+                                    <label for="confirm_password" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Confirmer le mot de passe</label>
                                     <input type="password" id="confirm_password" name="confirm_password" class="form-control" 
-                                           placeholder="Répétez le nouveau mot de passe" required>
+                                           placeholder="Répétez le nouveau mot de passe" required
+                                           style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                 </div>
 
                                 <div class="d-grid">
-                                    <button type="submit" name="update_password" class="btn btn-outline-secondary">
+                                    <button type="submit" name="update_password" class="btn" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 500;">
+                                        <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                        </svg>
                                         Changer le mot de passe
                                     </button>
                                 </div>
@@ -144,31 +157,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Account Information -->
             <div class="row mt-4">
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Informations du compte</h2>
+                    <div class="card" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Informations du compte</h2>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <div class="row">
                                 <div class="col-12 col-md-4">
-                                    <h6 class="text-muted mb-1">Nom d'utilisateur</h6>
-                                    <p class="mb-3"><?php echo htmlspecialchars($teacher->nom); ?></p>
+                                    <h6 style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; margin-bottom: 4px;">Nom d'utilisateur</h6>
+                                    <p style="font-size: 14px; color: #1c1c1c; margin-bottom: 16px;"><?php echo htmlspecialchars($teacher->nom); ?></p>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <h6 class="text-muted mb-1">Email</h6>
-                                    <p class="mb-3"><?php echo htmlspecialchars($teacher->email); ?></p>
+                                    <h6 style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; margin-bottom: 4px;">Email</h6>
+                                    <p style="font-size: 14px; color: #1c1c1c; margin-bottom: 16px;"><?php echo htmlspecialchars($teacher->email); ?></p>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <h6 class="text-muted mb-1">Activité</h6>
-                                        <p class="mb-3">Gérée par classe</p>
-                                    </div>
+                                    <h6 style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; margin-bottom: 4px;">Activité</h6>
+                                    <p style="font-size: 14px; color: #1c1c1c; margin-bottom: 16px;">Gérée par classe</p>
+                                </div>
                             </div>
-                            <hr>
+                            <hr style="border-color: rgba(0,0,0,0.1);">
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="index.php?page=dashboard" class="btn btn-outline-primary">
-                                    Retour au tableau de bord
+                                <a href="index.php?page=dashboard" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
+                                    <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                    </svg>
+                                    Tableau de bord
                                 </a>
-                                <a href="index.php?page=manage_classes" class="btn btn-outline-secondary">
+                                <a href="index.php?page=manage_classes" class="btn" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
+                                    <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                    </svg>
                                     Gérer les classes
                                 </a>
                             </div>

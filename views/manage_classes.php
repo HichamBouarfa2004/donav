@@ -77,33 +77,37 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="bg-light">
+<body style="background: #f9f9fa;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 250px; padding-top: 70px; min-height: 100vh;">
+    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
         <?php include 'views/partials/header.php'; ?>
         
-        <main class="container-fluid py-4">
+        <main class="container-fluid" style="padding: 28px;">
             <div class="row mb-4 align-items-center">
                 <div class="col-12 col-md-8">
-                    <h1 class="h3 mb-0">Gestion des classes</h1>
+                    <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 0;">Gestion des classes</h1>
                 </div>
                 <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createClassModal">
+                    <button class="btn" data-bs-toggle="modal" data-bs-target="#createClassModal" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
+                        <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
                         Créer une classe
                     </button>
                 </div>
             </div>
             
             <?php if ($message): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($message); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
             <?php endif; ?>
             
             <?php if ($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($error); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
@@ -111,28 +115,31 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
             
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Mes Classes</h2>
+                    <div class="card" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Mes Classes</h2>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <?php if (empty($classes)): ?>
                                 <div class="text-center py-5">
-                                    <p class="text-muted mb-3">Vous n'avez pas encore de classes.</p>
-                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createClassModal">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" style="margin-bottom: 16px;">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <p style="color: rgba(0,0,0,0.4); margin-bottom: 16px;">Vous n'avez pas encore de classes.</p>
+                                    <button class="btn" data-bs-toggle="modal" data-bs-target="#createClassModal" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
                                         Créer votre première classe
                                     </button>
                                 </div>
                             <?php else: ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle mb-0" id="classesTable">
-                                        <thead class="table-light">
+                                        <thead>
                                             <tr>
-                                                <th>Nom de la classe</th>
-                                                <th class="text-center">Nombre d'élèves</th>
-                                                <th class="text-center">Points totaux</th>
-                                                <th class="text-center">Date de création</th>
-                                                <th class="text-end">Actions</th>
+                                                <th style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Nom de la classe</th>
+                                                <th class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Nombre d'élèves</th>
+                                                <th class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Points totaux</th>
+                                                <th class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Date de création</th>
+                                                <th class="text-end" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -144,32 +151,34 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 $total_points = $pointSystem->getTotalPointsByClass($class['id']);
                                                 ?>
                                                 <tr>
-                                                    <td>
+                                                    <td style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 14px; color: #1c1c1c;">
                                                         <strong><?php echo htmlspecialchars($class['nom']); ?></strong>
                                                     </td>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-primary-subtle text-primary-emphasis"><?php echo $student_count; ?></span>
+                                                    <td class="text-center" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                                        <span style="background: #edeefc; color: #6366f1; font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 8px;"><?php echo $student_count; ?></span>
                                                     </td>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-success-subtle text-success-emphasis"><?php echo number_format($total_points); ?></span>
+                                                    <td class="text-center" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                                        <span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 8px;"><?php echo number_format($total_points); ?></span>
                                                     </td>
-                                                    <td class="text-center">
-                                                        <small class="text-muted"><?php echo date('d/m/Y', strtotime($class['created_at'])); ?></small>
+                                                    <td class="text-center" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                                        <small style="font-size: 12px; color: rgba(0,0,0,0.4);"><?php echo date('d/m/Y', strtotime($class['created_at'])); ?></small>
                                                     </td>
-                                                    <td class="text-end">
-                                                        <div class="btn-group" role="group">
+                                                    <td class="text-end" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                                        <div class="d-flex justify-content-end gap-2">
                                                             <a href="index.php?page=class_view&id=<?php echo $class['id']; ?>" 
-                                                               class="btn btn-sm btn-primary">
+                                                               class="btn btn-sm" style="background: #1c1c1c; color: #fff; border-radius: 8px; font-size: 12px; padding: 4px 12px;">
                                                                 Voir
                                                             </a>
-                                                            <button class="btn btn-sm btn-outline-secondary edit-class-btn" 
+                                                            <button class="btn btn-sm edit-class-btn" 
                                                                     data-class-id="<?php echo $class['id']; ?>"
-                                                                    data-class-name="<?php echo htmlspecialchars($class['nom']); ?>">
+                                                                    data-class-name="<?php echo htmlspecialchars($class['nom']); ?>"
+                                                                    style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 8px; font-size: 12px; padding: 4px 12px;">
                                                                 Modifier
                                                             </button>
-                                                            <button class="btn btn-sm btn-outline-danger delete-class-btn" 
+                                                            <button class="btn btn-sm delete-class-btn" 
                                                                     data-class-id="<?php echo $class['id']; ?>"
-                                                                    data-class-name="<?php echo htmlspecialchars($class['nom']); ?>">
+                                                                    data-class-name="<?php echo htmlspecialchars($class['nom']); ?>"
+                                                                    style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 8px; font-size: 12px; padding: 4px 12px;">
                                                                 Supprimer
                                                             </button>
                                                         </div>

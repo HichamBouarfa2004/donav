@@ -9,6 +9,7 @@ class Router {
         'add_student' => 'views/add_student.php',
         'import_students' => 'views/import_students.php',
         'points_log' => 'views/points_log.php',
+        'absences' => 'views/absences.php',
         'generate_certificate' => 'views/generate_certificate.php',
         'manage_classes' => 'views/manage_classes.php',
         'profile' => 'views/profile.php',

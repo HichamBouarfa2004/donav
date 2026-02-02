@@ -56,33 +56,37 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="bg-light">
+<body style="background: #f9f9fa;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 250px; padding-top: 70px; min-height: 100vh;">
+    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
         <?php include 'views/partials/header.php'; ?>
         
-        <main class="container-fluid py-4">
+        <main class="container-fluid" style="padding: 28px;">
             <div class="row mb-4 align-items-center">
                 <div class="col-12 col-md-8">
-                    <h1 class="h3 mb-0">Ajouter un élève</h1>
+                    <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 0;">Ajouter un élève</h1>
                 </div>
                 <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
-                    <a href="index.php?page=dashboard" class="btn btn-outline-secondary">
-                        Retour au tableau de bord
+                    <a href="index.php?page=dashboard" class="btn" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
+                        <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Retour
                     </a>
                 </div>
             </div>
             
             <?php if ($message): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($message); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
             <?php endif; ?>
             
             <?php if ($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($error); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
@@ -91,17 +95,17 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="row g-4">
                 <!-- Add Student Form -->
                 <div class="col-12 col-lg-8">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Informations de l'élève</h2>
+                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Informations de l'élève</h2>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <?php if (empty($classes)): ?>
-                                <div class="alert alert-warning d-flex align-items-center" role="alert">
+                                <div class="d-flex align-items-center" role="alert" style="background: #fef4e6; border-radius: 12px; padding: 16px;">
                                     <div>
-                                        <h6 class="alert-heading">Aucune classe disponible!</h6>
-                                        <p class="mb-3">Vous devez d'abord créer une classe avant d'ajouter des élèves.</p>
-                                        <a href="index.php?page=manage_classes" class="btn btn-primary">
+                                        <h6 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px;">Aucune classe disponible!</h6>
+                                        <p style="font-size: 14px; color: rgba(0,0,0,0.6); margin-bottom: 12px;">Vous devez d'abord créer une classe avant d'ajouter des élèves.</p>
+                                        <a href="index.php?page=manage_classes" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
                                             Créer une classe
                                         </a>
                                     </div>
@@ -109,15 +113,17 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <?php else: ?>
                                 <form method="POST">
                                     <div class="mb-3">
-                                        <label for="nom" class="form-label">Nom complet de l'élève</label>
-                                        <input type="text" name="nom" id="nom" class="form-control form-control-lg" 
+                                        <label for="nom" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Nom complet de l'élève</label>
+                                        <input type="text" name="nom" id="nom" class="form-control" 
                                                value="<?php echo htmlspecialchars($_POST['nom'] ?? ''); ?>"
-                                               placeholder="Prénom Nom" required>
+                                               placeholder="Prénom Nom" required
+                                               style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                     </div>
                                     
                                     <div class="mb-4">
-                                        <label for="classe_id" class="form-label">Classe</label>
-                                        <select name="classe_id" id="classe_id" class="form-select form-select-lg" required>
+                                        <label for="classe_id" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Classe</label>
+                                        <select name="classe_id" id="classe_id" class="form-select" required
+                                                style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                             <option value="">Sélectionner une classe</option>
                                             <?php foreach ($classes as $class): ?>
                                                 <option value="<?php echo $class['id']; ?>" 
@@ -129,7 +135,13 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                                     </div>
                                     
                                     <div class="d-grid">
-                                        <button type="submit" class="btn btn-primary btn-lg">
+                                        <button type="submit" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 500;">
+                                            <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="8.5" cy="7" r="4"></circle>
+                                                <line x1="20" y1="8" x2="20" y2="14"></line>
+                                                <line x1="23" y1="11" x2="17" y2="11"></line>
+                                            </svg>
                                             Ajouter l'élève
                                         </button>
                                     </div>
@@ -141,30 +153,49 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 <!-- Quick Actions -->
                 <div class="col-12 col-lg-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Actions rapides</h2>
+                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Actions rapides</h2>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <div class="d-grid gap-3">
-                                <a href="index.php?page=import_students&class_id=<?php echo $selected_class_id; ?>" class="btn btn-secondary btn-lg">
-                                    📁 Importer depuis Excel
+                                <a href="index.php?page=import_students&class_id=<?php echo $selected_class_id; ?>" class="btn d-flex align-items-center justify-content-center" style="background: #edeefc; color: #6366f1; border: none; border-radius: 12px; padding: 12px 16px; font-size: 14px;">
+                                    <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                    Importer depuis Excel
                                 </a>
                                 
-                                <a href="index.php?page=manage_classes" class="btn btn-outline-secondary btn-lg">
-                                    🏫 Gérer les classes
+                                <a href="index.php?page=manage_classes" class="btn d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 12px 16px; font-size: 14px;">
+                                    <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    Gérer les classes
                                 </a>
                                 
-                                <a href="index.php?page=dashboard" class="btn btn-outline-secondary btn-lg">
-                                    🏠 Tableau de bord
+                                <a href="index.php?page=dashboard" class="btn d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 12px 16px; font-size: 14px;">
+                                    <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                    </svg>
+                                    Tableau de bord
                                 </a>
                             </div>
                             
-                            <hr class="my-4">
+                            <hr style="border-color: rgba(0,0,0,0.1); margin: 24px 0;">
                             
                             <div>
-                                <h6 class="fw-semibold mb-3">💡 Conseils</h6>
-                                <ul class="list-unstyled small text-muted">
+                                <h6 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 12px; display: flex; align-items: center;">
+                                    <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                    Conseils
+                                </h6>
+                                <ul class="list-unstyled" style="font-size: 12px; color: rgba(0,0,0,0.6);">
                                     <li class="mb-2">• Utilisez le format "Prénom Nom" pour une meilleure lisibilité</li>
                                     <li class="mb-2">• Vous pouvez importer plusieurs élèves à la fois avec un fichier Excel</li>
                                     <li class="mb-2">• Les élèves commencent avec 0 points</li>

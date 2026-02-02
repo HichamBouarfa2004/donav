@@ -1,0 +1,702 @@
+/* ===== SnowUI Inspired Dashboard Design ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===== Base Reset ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  color: #1c1c1c;
+  background-color: #f9f9fa;
+  font-feature-settings: 'ss01' 1, 'cv01' 1;
+}
+
+/* ===== Custom Variables (SnowUI Design System) ===== */
+:root {
+  /* Colors */
+  --color-primary: #1c1c1c;
+  --color-primary-light: rgba(0, 0, 0, 0.04);
+  --color-text: #1c1c1c;
+  --color-text-secondary: rgba(0, 0, 0, 0.4);
+  --color-text-muted: rgba(0, 0, 0, 0.6);
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-background: #f9f9fa;
+  --color-background-card: #ffffff;
+  --color-white: #ffffff;
+  
+  /* Card Colors */
+  --card-purple: #edeefc;
+  --card-blue: #e8f4fd;
+  --card-green: #e6f9f0;
+  --card-orange: #fef4e6;
+  
+  /* Success/Error */
+  --color-success: #22c55e;
+  --color-success-light: rgba(34, 197, 94, 0.1);
+  --color-error: #ef4444;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  
+  /* Spacing */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  
+  /* Border Radius */
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* Transitions */
+  --transition: all 0.2s ease;
+  
+  /* Sidebar */
+  --sidebar-width: 212px;
+}
+
+/* ===== Layout ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-20);
+}
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  padding: var(--spacing-28);
+  padding-top: 88px;
+  min-height: 100vh;
+  background-color: var(--color-background);
+  transition: var(--transition);
+}
+
+/* ===== Sidebar Styles (SnowUI) ===== */
+.sidebar {
+  width: var(--sidebar-width) !important;
+  background: var(--color-white) !important;
+  border-right: 0.5px solid var(--color-border);
+  padding: var(--spacing-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}
+
+.sidebar-header {
+  padding: var(--spacing-12) var(--spacing-8) !important;
+  padding-bottom: var(--spacing-12) !important;
+  border-bottom: 0.5px solid var(--color-border) !important;
+  margin-bottom: var(--spacing-8);
+}
+
+.sidebar-header a {
+  color: var(--color-text) !important;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sidebar-header .logo-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-8);
+  font-size: 16px !important;
+}
+
+.sidebar .nav {
+  gap: var(--spacing-4);
+  padding: 0 !important;
+}
+
+.sidebar .nav-link {
+  color: var(--color-text) !important;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-12);
+  font-size: 14px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  transition: var(--transition);
+}
+
+.sidebar .nav-link:hover {
+  background: var(--color-primary-light);
+}
+
+.sidebar .nav-link.bg-white,
+.sidebar .nav-link.bg-opacity-10,
+.sidebar .nav-link.active,
+.sidebar .nav-link[class*="bg-white"] {
+  background: var(--color-primary-light) !important;
+}
+
+.sidebar .nav-link i {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-size: 14px;
+}
+
+/* Section Labels in Sidebar */
+.sidebar-section-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-8) var(--spacing-12);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Header/Navbar Styles (SnowUI) ===== */
+.navbar {
+  background: var(--color-white) !important;
+  border-bottom: 0.5px solid var(--color-border) !important;
+  height: 68px !important;
+  padding: var(--spacing-20) var(--spacing-28) !important;
+  left: var(--sidebar-width) !important;
+  box-shadow: none !important;
+}
+
+.navbar-brand {
+  font-size: 24px !important;
+  font-weight: 600;
+  color: var(--color-text) !important;
+}
+
+.navbar .btn-outline-secondary {
+  border: none;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-12);
+  padding: var(--spacing-4);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Search Bar (SnowUI Style) */
+.search-bar {
+  background: var(--color-primary-light);
+  border-radius: var(--radius-16);
+  padding: var(--spacing-4) var(--spacing-8);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  width: 160px;
+}
+
+.search-bar input {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+}
+
+.search-bar svg {
+  opacity: 0.4;
+}
+
+/* User Avatar */
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+/* ===== Dashboard Cards (SnowUI Stat Cards) ===== */
+.stat-card {
+  background: var(--card-purple);
+  border-radius: var(--radius-20);
+  padding: var(--spacing-24);
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.stat-card:nth-child(2) {
+  background: var(--card-blue);
+}
+
+.stat-card:nth-child(3) {
+  background: var(--card-green);
+}
+
+.stat-card:nth-child(4) {
+  background: var(--card-orange);
+}
+
+.stat-card .card-body {
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+.stat-card .stat-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text);
+  margin-bottom: var(--spacing-8);
+}
+
+.stat-card .stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 36px;
+}
+
+.stat-card .stat-change {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.stat-card .stat-change.positive {
+  color: var(--color-success);
+}
+
+.stat-card .stat-change.negative {
+  color: var(--color-error);
+}
+
+/* ===== Block/Panel Cards (SnowUI) ===== */
+.card {
+  border-radius: var(--radius-20) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.card:not([style*="background"]) {
+  background: var(--color-background-card);
+}
+
+.card-header {
+  background: transparent !important;
+  border-bottom: none !important;
+  padding: var(--spacing-24) !important;
+  padding-bottom: var(--spacing-16) !important;
+}
+
+.card-header h2,
+.card-header .h5 {
+  font-size: 14px !important;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.card-body {
+  padding: var(--spacing-24) !important;
+  padding-top: 0 !important;
+}
+
+/* Stat cards with colored backgrounds - preserve inline styles */
+.stat-card-purple { background: #edeefc !important; }
+.stat-card-blue { background: #e8f4fd !important; }
+.stat-card-green { background: #e6f9f0 !important; }
+.stat-card-orange { background: #fef4e6 !important; }
+
+.stat-card-purple .card-body,
+.stat-card-blue .card-body,
+.stat-card-green .card-body,
+.stat-card-orange .card-body {
+  padding: 24px !important;
+}
+
+/* ===== Tables (SnowUI Style) ===== */
+.table {
+  margin-bottom: 0;
+}
+
+.table thead {
+  background: transparent;
+}
+
+.table thead th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-12) var(--spacing-16);
+}
+
+.table tbody td {
+  padding: var(--spacing-16);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-light {
+  background: transparent !important;
+}
+
+/* ===== Buttons (SnowUI Style) ===== */
+.btn {
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-12);
+  padding: var(--spacing-8) var(--spacing-16);
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-white);
+}
+
+.btn-primary:hover {
+  background: #333;
+  border-color: #333;
+}
+
+.btn-sm {
+  padding: var(--spacing-4) var(--spacing-12);
+  font-size: 12px;
+  border-radius: var(--radius-8);
+}
+
+.btn-outline-secondary {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-outline-secondary:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* ===== Badges (SnowUI Style) ===== */
+.badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: var(--spacing-4) var(--spacing-8);
+  border-radius: var(--radius-8);
+}
+
+.badge.bg-primary-subtle {
+  background: var(--card-purple) !important;
+  color: #6366f1 !important;
+}
+
+.badge.bg-success-subtle {
+  background: var(--color-success-light) !important;
+  color: var(--color-success) !important;
+}
+
+.badge.bg-info-subtle {
+  background: var(--card-blue) !important;
+  color: #3b82f6 !important;
+}
+
+.badge.bg-warning-subtle {
+  background: var(--card-orange) !important;
+  color: #f59e0b !important;
+}
+
+/* ===== List Groups (SnowUI Style) ===== */
+.list-group-item {
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-16) 0;
+  background: transparent;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+.list-group-item h6 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--spacing-4);
+}
+
+.list-group-item small {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ===== Page Title (SnowUI Style) ===== */
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--spacing-4);
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* ===== Form Controls (SnowUI Style) ===== */
+.form-control {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  padding: var(--spacing-12) var(--spacing-16);
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.form-control:focus {
+  border-color: var(--color-text);
+  box-shadow: none;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--spacing-8);
+}
+
+.form-select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  padding: var(--spacing-12) var(--spacing-16);
+  font-size: 14px;
+}
+
+/* ===== Alerts (SnowUI Style) ===== */
+.alert {
+  border-radius: var(--radius-12);
+  border: none;
+  padding: var(--spacing-16);
+  font-size: 14px;
+}
+
+.alert-success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.alert-danger {
+  background: var(--color-error-light);
+  color: var(--color-error);
+}
+
+/* ===== Empty States ===== */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-24);
+  color: var(--color-text-secondary);
+}
+
+.empty-state svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-16);
+  opacity: 0.4;
+}
+
+/* ===== Bootstrap Overrides ===== */
+.bg-white-10 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.text-muted {
+  color: var(--color-text-secondary) !important;
+}
+
+.bg-light {
+  background-color: var(--color-background) !important;
+}
+
+.shadow-sm {
+  box-shadow: none !important;
+}
+
+.border-0 {
+  border: none !important;
+}
+
+h1.h3, .h3 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.h5, h2.h5 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Display values in cards */
+.display-6 {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  line-height: 36px;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 991.98px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    padding-top: 88px !important;
+    padding: var(--spacing-16);
+    padding-top: 88px !important;
+  }
+
+  .navbar {
+    left: 0 !important;
+  }
+  
+  .sidebar.d-none.d-lg-flex {
+    display: none !important;
+  }
+}
+
+/* ===== Custom Components (non-Bootstrap) ===== */
+.students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-20);
+}
+
+/* ===== Legacy Support (if needed) ===== */
+.table-container {
+  overflow-x: auto;
+  background: var(--color-white);
+  border-radius: var(--radius-20);
+}
+
+/* ===== Responsive Breakpoints ===== */
+@media (max-width: 768px) {
+  .students-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-container {
+    font-size: 14px;
+  }
+
+  .table th,
+  .table td {
+    padding: var(--spacing-12);
+  }
+  
+  .stat-card {
+    padding: var(--spacing-16);
+  }
+  
+  .stat-card .stat-value {
+    font-size: 20px;
+  }
+}
+
+/* ===== Mobile Offcanvas Sidebar ===== */
+.offcanvas {
+  background: var(--color-white) !important;
+  width: var(--sidebar-width) !important;
+}
+
+.offcanvas-header {
+  border-bottom: 0.5px solid var(--color-border);
+  padding: var(--spacing-16);
+}
+
+.offcanvas-title {
+  color: var(--color-text) !important;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.offcanvas-body {
+  padding: var(--spacing-16);
+}
+
+.offcanvas .nav-link {
+  color: var(--color-text) !important;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-12);
+  font-size: 14px;
+  margin-bottom: var(--spacing-4);
+}
+
+.offcanvas .nav-link:hover,
+.offcanvas .nav-link.active,
+.offcanvas .nav-link[class*="bg-white"] {
+  background: var(--color-primary-light) !important;
+}
+
+/* Icon button styles */
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light);
+  border: none;
+  border-radius: var(--radius-8);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.icon-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Override Bootstrap primary color to match design */
+.text-primary {
+  color: var(--color-text) !important;
+}
+
+.text-info {
+  color: #3b82f6 !important;
+}
+
+.text-success {
+  color: var(--color-success) !important;
+}
+
+.text-warning {
+  color: #f59e0b !important;
+}
+
+.bg-primary {
+  background-color: var(--color-text) !important;
+}

@@ -133,29 +133,29 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="bg-light">
+<body style="background: #f9f9fa;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 250px; padding-top: 70px; min-height: 100vh;">
+    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
         <?php include 'views/partials/header.php'; ?>
         
-        <main class="container-fluid py-4">
+        <main class="container-fluid" style="padding: 28px;">
             <div class="row mb-4">
                 <div class="col-12">
-                    <h1 class="h3 mb-1">Importer des élèves</h1>
-                    <p class="text-muted mb-0">Importez plusieurs élèves à la fois depuis un fichier Excel</p>
+                    <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px;">Importer des élèves</h1>
+                    <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 0;">Importez plusieurs élèves à la fois depuis un fichier Excel</p>
                 </div>
             </div>
             
             <?php if ($message): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($message); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
             <?php endif; ?>
             
             <?php if ($error): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($error); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                 </div>
@@ -164,15 +164,15 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="row g-4">
                 <!-- Import Form -->
                 <div class="col-12 col-lg-8">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Fichier d'importation</h2>
+                    <div class="card" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Fichier d'importation</h2>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <form method="POST" enctype="multipart/form-data">
                                 <div class="mb-3">
-                                    <label for="classe_id" class="form-label">Classe de destination</label>
-                                    <select name="classe_id" id="classe_id" class="form-select" required>
+                                    <label for="classe_id" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Classe de destination</label>
+                                    <select name="classe_id" id="classe_id" class="form-select" required style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                         <option value="">Sélectionner une classe</option>
                                         <?php foreach ($classes as $class): ?>
                                             <option value="<?php echo $class['id']; ?>" 
@@ -184,17 +184,22 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </div>
 
                                 <div class="mb-4">
-                                    <label for="excel_file" class="form-label">Fichier Excel</label>
+                                    <label for="excel_file" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Fichier Excel</label>
                                     <input type="file" name="excel_file" id="excel_file" class="form-control" 
-                                           accept=".xlsx,.xls" required>
-                                    <div class="form-text">
+                                           accept=".xlsx,.xls" required style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
+                                    <div style="font-size: 12px; color: rgba(0,0,0,0.4); margin-top: 8px;">
                                         Formats acceptés: .xlsx, .xls (maximum 5MB)
                                     </div>
                                 </div>
 
                                 <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-lg">
-                                        📤 Importer les élèves
+                                    <button type="submit" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 500;">
+                                        <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        Importer les élèves
                                     </button>
                                 </div>
                             </form>
@@ -204,39 +209,46 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <!-- Instructions -->
                 <div class="col-12 col-lg-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white border-0">
-                            <h2 class="h5 mb-0">Instructions</h2>
+                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Instructions</h2>
                         </div>
-                        <div class="card-body">
-                            <h6 class="fw-semibold mb-3">Format du fichier Excel</h6>
-                            <p class="small text-muted mb-3">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
+                            <h6 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 12px;">Format du fichier Excel</h6>
+                            <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin-bottom: 12px;">
                                 Votre fichier Excel doit contenir les colonnes suivantes en première ligne :
                             </p>
                             
                             <div class="table-responsive mb-4">
-                                <table class="table table-sm table-bordered">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="small">Nom</th>
-                                            <th class="small">Prenom</th>
+                                <table class="table table-sm mb-0" style="border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1);">
+                                    <thead>
+                                        <tr style="background: rgba(0,0,0,0.04);">
+                                            <th style="font-size: 12px; font-weight: 500; color: #1c1c1c; padding: 10px 12px; border: none;">Nom</th>
+                                            <th style="font-size: 12px; font-weight: 500; color: #1c1c1c; padding: 10px 12px; border: none;">Prenom</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td class="small">Dupont</td>
-                                            <td class="small">Jean</td>
+                                            <td style="font-size: 12px; color: rgba(0,0,0,0.6); padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">Dupont</td>
+                                            <td style="font-size: 12px; color: rgba(0,0,0,0.6); padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.1);">Jean</td>
                                         </tr>
                                         <tr>
-                                            <td class="small">Martin</td>
-                                            <td class="small">Marie</td>
+                                            <td style="font-size: 12px; color: rgba(0,0,0,0.6); padding: 10px 12px; border: none;">Martin</td>
+                                            <td style="font-size: 12px; color: rgba(0,0,0,0.6); padding: 10px 12px; border: none;">Marie</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <h6 class="fw-semibold mb-3">💡 Conseils</h6>
-                            <ul class="list-unstyled small text-muted">
+                            <h6 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 12px; display: flex; align-items: center;">
+                                <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                Conseils
+                            </h6>
+                            <ul class="list-unstyled" style="font-size: 12px; color: rgba(0,0,0,0.6);">
                                 <li class="mb-2">• Assurez-vous que la première ligne contient les en-têtes</li>
                                 <li class="mb-2">• Évitez les cellules vides dans les noms</li>
                                 <li class="mb-2">• Les élèves seront ajoutés avec 0 points</li>

@@ -150,6 +150,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_student'])) {
     }
 }
 
+// Handle absence recording
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['record_absence'])) {
+    // Removed - absences now managed from dedicated page
+}
+
+// Handle absence deletion
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_absence'])) {
+    // Removed - absences now managed from dedicated page
+}
+
 // handle Certificate generation (automatic based on current activity)
 if (isset($_GET['generate_cert']) && isset($_GET['student_id']) && isset($_GET['activity_id'])) {
     $student_id = intval($_GET['student_id']);
@@ -224,36 +234,40 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="bg-light">
+<body style="background: #f9f9fa;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 250px; padding-top: 70px; min-height: 100vh;">
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm position-fixed" style="left: 250px; right: 0; top: 0; z-index: 1020; height: 70px;">
+    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
+        <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.1);">
             <div class="container-fluid px-4">
-                <button class="btn btn-outline-secondary d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
-                    <i class="bi bi-list"></i>
+                <button class="btn d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
                 </button>
 
-                <h1 class="navbar-brand mb-0 h1">Classe : <?php echo htmlspecialchars($classroom->nom); ?></h1>
+                <h1 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin: 0;">Classe : <?php echo htmlspecialchars($classroom->nom); ?></h1>
 
                 <div class="d-flex align-items-center">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: bold;">
+                    <div class="d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 14px; font-weight: 500;">
                         <?php echo strtoupper(substr($_SESSION['teacher_name'], 0, 1)); ?>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <main class="container-fluid py-4">
+        <main class="container-fluid" style="padding: 28px;">
             <?php if (isset($message) && !empty($message)): ?>
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo htmlspecialchars($message); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             <?php endif; ?>
             
             <?php if (isset($error) && !empty($error)): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
                     <?php echo $error; ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -261,19 +275,34 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
             
             <div class="row g-3 align-items-center mb-4">
                 <div class="col-12 col-xl-8">
-                    <h1 class="h3 mb-1">Classe : <?php echo htmlspecialchars($classroom->nom); ?></h1>
-                    <p class="text-muted mb-0"><?php echo count($students); ?> élèves inscrits</p>
+                    <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px;">Classe : <?php echo htmlspecialchars($classroom->nom); ?></h1>
+                    <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 0;"><?php echo count($students); ?> élèves inscrits</p>
                 </div>
                 <div class="col-12 col-xl-4">
                     <div class="d-flex flex-wrap gap-2 justify-content-xl-end">
-                        <a href="index.php?page=add_student&class_id=<?php echo $class_id; ?>" class="btn btn-outline-secondary">
+                        <a href="index.php?page=add_student&class_id=<?php echo $class_id; ?>" class="btn" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
+                            <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="8.5" cy="7" r="4"></circle>
+                                <line x1="20" y1="8" x2="20" y2="14"></line>
+                                <line x1="23" y1="11" x2="17" y2="11"></line>
+                            </svg>
                             Ajouter un élève
                         </a>
-                        <a href="index.php?page=import_students&class_id=<?php echo $class_id; ?>" class="btn btn-primary">
+                        <a href="index.php?page=import_students&class_id=<?php echo $class_id; ?>" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
+                            <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
                             Importer Excel
                         </a>
                         <?php if (!empty($students)): ?>
-                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAllStudentsModal">
+                            <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#deleteAllStudentsModal" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
+                                <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
                                 Supprimer tous
                             </button>
                         <?php endif; ?>
@@ -285,14 +314,14 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php if (!empty($class_activities)): ?>
                 <div class="row mb-4">
                     <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
+                        <div class="card" style="background: #fff; border-radius: 20px; border: none;">
+                            <div style="padding: 20px 24px;">
                                 <div class="row align-items-center">
                                     <div class="col-12 col-md-6">
-                                        <h5 class="mb-2 mb-md-0">Filtrer par activité</h5>
+                                        <h5 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px; margin-bottom: 0;">Filtrer par activité</h5>
                                     </div>
                                     <div class="col-12 col-md-6">
-                                        <select id="activityFilter" class="form-select">
+                                        <select id="activityFilter" class="form-select" style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 10px 16px; font-size: 14px;">
                                             <?php foreach ($class_activities as $ca): ?>
                                                 <option value="<?php echo $ca['id']; ?>"><?php echo htmlspecialchars($ca['title']); ?></option>
                                             <?php endforeach; ?>
@@ -306,13 +335,15 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php else: ?>
                 <div class="row mb-4">
                     <div class="col-12">
-                        <div class="alert alert-info border-0 shadow-sm">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-info-circle me-3 fs-4"></i>
-                                <div>
-                                    <h6 class="alert-heading mb-1">Aucune activité créée</h6>
-                                    <p class="mb-0">Vous devez créer au moins une activité pour pouvoir ajouter des points aux élèves. Utilisez la section "Activités de la classe" ci-dessous pour commencer.</p>
-                                </div>
+                        <div class="d-flex align-items-center" style="background: #e8f4fd; border-radius: 12px; padding: 16px 20px;">
+                            <svg class="me-3" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <div>
+                                <h6 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 4px;">Aucune activité créée</h6>
+                                <p style="font-size: 14px; color: rgba(0,0,0,0.6); margin: 0;">Vous devez créer au moins une activité pour pouvoir ajouter des points aux élèves. Utilisez la section "Activités de la classe" ci-dessous pour commencer.</p>
                             </div>
                         </div>
                     </div>
@@ -323,38 +354,45 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="row g-4">
                 <div class="col-12 col-xl-8">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white border-0 pb-0">
+                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
                             <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                                 <div>
-                                    <h2 class="h5 mb-1">Élèves</h2>
-                                    <p class="text-muted mb-0">Suivez la progression et attribuez des points instantanément.</p>
+                                    <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 4px;">Élèves</h2>
+                                    <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;">Suivez la progression et attribuez des points instantanément.</p>
                                 </div>
                                 <div class="w-100" style="max-width: 260px;">
                                     <input type="text"
                                            class="form-control table-search"
                                            data-table="studentsTable"
-                                           placeholder="Rechercher un élève...">
+                                           placeholder="Rechercher un élève..."
+                                           style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 10px 16px; font-size: 14px;">
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <?php if (empty($students)): ?>
                                 <div class="text-center py-5">
-                                    <p class="text-muted mb-3">Aucun élève dans cette classe pour le moment.</p>
-                                    <a href="index.php?page=add_student&class_id=<?php echo $class_id; ?>" class="btn btn-primary">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" style="margin-bottom: 16px;">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                    </svg>
+                                    <p style="color: rgba(0,0,0,0.4); margin-bottom: 16px;">Aucun élève dans cette classe pour le moment.</p>
+                                    <a href="index.php?page=add_student&class_id=<?php echo $class_id; ?>" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
                                         Ajouter le premier élève
                                     </a>
                                 </div>
                             <?php else: ?>
                                 <div class="table-responsive">
                                     <table class="table align-middle table-hover mb-0" id="studentsTable">
-                                        <thead class="table-light">
+                                        <thead>
                                             <tr>
-                                                <th scope="col">Élève</th>
-                                                <th scope="col" class="text-center">Points</th>
-                                                <th scope="col">Progression</th>
-                                                <th scope="col" class="text-end">Actions</th>
+                                                <th scope="col" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Élève</th>
+                                                <th scope="col" class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Points</th>
+                                                <th scope="col" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Progression</th>
+                                                <th scope="col" class="text-end" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody id="studentsTableBody">
@@ -379,57 +417,58 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     data-student-id="<?php echo $student_data['id']; ?>"
                                                     data-total-points="<?php echo $student_data['points']; ?>"
                                                     data-activities='<?php echo json_encode($activity_breakdown, JSON_HEX_APOS | JSON_HEX_QUOT); ?>'>
-                                                    <td>
+                                                    <td style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
                                                         <div class="d-flex flex-column">
-                                                            <span class="fw-semibold text-dark"><?php echo htmlspecialchars($student_data['nom']); ?></span>
+                                                            <span style="font-size: 14px; font-weight: 500; color: #1c1c1c;"><?php echo htmlspecialchars($student_data['nom']); ?></span>
                                                             <?php if ($isCertificateReady): ?>
-                                                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle mt-2">Certificat prêt</span>
+                                                                <span style="display: inline-block; background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px; margin-top: 6px; width: fit-content;">Certificat prêt</span>
                                                             <?php endif; ?>
                                                         </div>
                                                     </td>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-primary-subtle text-primary-emphasis px-3 py-2 points-display">
+                                                    <td class="text-center" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                                        <span class="points-display" style="background: #edeefc; color: #6366f1; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 8px;">
                                                             <?php echo $student_data['points']; ?>
                                                         </span>
                                                     </td>
-                                                    <td>
+                                                    <td style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
                                                         <div class="d-flex flex-column gap-2">
-                                                            <div class="progress" style="height: 6px;">
+                                                            <div class="progress" style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px;">
                                                                 <div class="progress-bar progress-bar-display <?php echo $progressClass; ?>" role="progressbar"
-                                                                     style="width: <?php echo $progress; ?>%;"
+                                                                     style="width: <?php echo $progress; ?>%; border-radius: 3px;"
                                                                      aria-valuenow="<?php echo $progress; ?>"
                                                                      aria-valuemin="0" aria-valuemax="100"></div>
                                                             </div>
-                                                            <small class="text-muted points-text"><?php echo $student_data['points']; ?>/100 points</small>
+                                                            <small class="points-text" style="font-size: 12px; color: rgba(0,0,0,0.4);"><?php echo $student_data['points']; ?>/100 points</small>
                                                         </div>
                                                     </td>
-                                                    <td class="text-end">
-                                                        <div class="action-buttons">
+                                                    <td class="text-end" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                                        <div class="action-buttons d-flex gap-2 justify-content-end flex-wrap">
                                                             <button type="button" 
-                                                                    class="btn btn-sm btn-success certificate-btn"
+                                                                    class="btn btn-sm certificate-btn"
                                                                     onclick="generateCertificateForCurrentActivity(<?php echo $student_data['id']; ?>)"
-                                                                    style="<?php echo $isCertificateReady ? '' : 'display: none;'; ?>">
+                                                                    style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 8px; font-size: 12px; padding: 4px 12px; <?php echo $isCertificateReady ? '' : 'display: none;'; ?>">
                                                                 Certificat
                                                             </button>
                                                             <button type="button" 
-                                                                    class="btn btn-sm btn-primary add-points-btn"
+                                                                    class="btn btn-sm add-points-btn"
                                                                     data-student-id="<?php echo $student_data['id']; ?>"
                                                                     data-student-name="<?php echo htmlspecialchars($student_data['nom']); ?>"
                                                                     onclick="openPointsModal(<?php echo $student_data['id']; ?>, '<?php echo htmlspecialchars($student_data['nom'], ENT_QUOTES); ?>');"
-                                                                    style="<?php echo ($isCertificateReady || empty($class_activities)) ? 'display: none;' : ''; ?>">
-                                                                <i class="bi bi-plus-circle me-1"></i>Ajouter des points
+                                                                    style="background: #1c1c1c; color: #fff; border: none; border-radius: 8px; font-size: 12px; padding: 4px 12px; <?php echo ($isCertificateReady || empty($class_activities)) ? 'display: none;' : ''; ?>">
+                                                                <svg class="me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Ajouter des points
                                                             </button>
                                                             <?php if (empty($class_activities) && !$isCertificateReady): ?>
-                                                                <span class="text-muted small">
-                                                                    <i class="bi bi-info-circle me-1"></i>Créez une activité pour ajouter des points
+                                                                <span style="font-size: 12px; color: rgba(0,0,0,0.4);">
+                                                                    <svg class="me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>Créez une activité
                                                                 </span>
                                                             <?php endif; ?>
                                                             <button type="button" 
-                                                                    class="btn btn-sm btn-outline-danger delete-student-btn"
+                                                                    class="btn btn-sm delete-student-btn"
                                                                     data-student-id="<?php echo $student_data['id']; ?>"
                                                                     data-student-name="<?php echo htmlspecialchars($student_data['nom']); ?>"
-                                                                    onclick="openDeleteStudentModal(<?php echo $student_data['id']; ?>, '<?php echo htmlspecialchars($student_data['nom'], ENT_QUOTES); ?>');">
-                                                                <i class="bi bi-trash me-1"></i>Supprimer
+                                                                    onclick="openDeleteStudentModal(<?php echo $student_data['id']; ?>, '<?php echo htmlspecialchars($student_data['nom'], ENT_QUOTES); ?>');"
+                                                                    style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 8px; font-size: 12px; padding: 4px 12px;">
+                                                                <svg class="me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Supprimer
                                                             </button>
                                                         </div>
                                                     </td>
@@ -444,27 +483,27 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
                 <div class="col-12 col-xl-4">
-                    <div class="card shadow-sm mb-3">
-                        <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center">
+                    <div class="card mb-3" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header d-flex justify-content-between align-items-center" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
                             <div>
-                                <h2 class="h5 mb-1">Activités de la classe</h2>
-                                <p class="text-muted mb-0">Gérez les raisons prédéfinies pour cette classe.</p>
+                                <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 4px;">Activités de la classe</h2>
+                                <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;">Gérez les raisons prédéfinies pour cette classe.</p>
                             </div>
-                            <button class="btn btn-sm btn-outline-primary" id="showAddActivityBtn">Ajouter</button>
+                            <button class="btn btn-sm" id="showAddActivityBtn" style="background: #1c1c1c; color: #fff; border-radius: 8px; font-size: 12px; padding: 4px 12px;">Ajouter</button>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <div id="classActivitiesList">
                                 <?php if (empty($class_activities)): ?>
-                                    <p class="text-muted text-center mb-0">Aucune activité définie pour cette classe.</p>
+                                    <p style="font-size: 14px; color: rgba(0,0,0,0.4); text-align: center; margin: 0;">Aucune activité définie pour cette classe.</p>
                                 <?php else: ?>
                                     <ul class="list-group list-group-flush">
                                         <?php foreach ($class_activities as $ca): ?>
-                                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <?php echo htmlspecialchars($ca['title']); ?>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center" style="border: none; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                                                <span style="font-size: 14px; color: #1c1c1c;"><?php echo htmlspecialchars($ca['title']); ?></span>
                                                 <form method="POST" class="d-inline" style="margin:0;">
                                                     <input type="hidden" name="delete_activity" value="1">
                                                     <input type="hidden" name="activity_id" value="<?php echo $ca['id']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
+                                                    <button type="submit" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 8px; font-size: 12px; padding: 4px 12px;">Supprimer</button>
                                                 </form>
                                             </li>
                                         <?php endforeach; ?>
@@ -476,34 +515,34 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <input type="hidden" name="create_activity" value="1">
                                     <input type="hidden" name="class_id" value="<?php echo $class_id; ?>">
                                     <div class="input-group">
-                                        <input type="text" name="activity_title" class="form-control" placeholder="Titre de l'activité">
-                                        <button class="btn btn-primary" type="submit">Ajouter</button>
+                                        <input type="text" name="activity_title" class="form-control" placeholder="Titre de l'activité" style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px 0 0 12px; padding: 10px 16px; font-size: 14px;">
+                                        <button class="btn" type="submit" style="background: #1c1c1c; color: #fff; border-radius: 0 12px 12px 0; font-size: 14px; padding: 10px 16px;">Ajouter</button>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white border-0 pb-0">
-                            <h2 class="h5 mb-1">Activité récente</h2>
-                            <p class="text-muted mb-0">Derniers ajouts de points dans cette classe.</p>
+                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
+                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
+                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin-bottom: 4px;">Activité récente</h2>
+                            <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;">Derniers ajouts de points dans cette classe.</p>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" style="padding: 24px; padding-top: 0;">
                             <?php if (empty($activities)): ?>
-                                <p class="text-muted text-center mb-0">Aucune activité récente.</p>
+                                <p style="font-size: 14px; color: rgba(0,0,0,0.4); text-align: center; margin: 0;">Aucune activité récente.</p>
                             <?php else: ?>
                                 <div class="list-group list-group-flush">
                                     <?php foreach ($activities as $activity): ?>
-                                        <div class="list-group-item px-0">
+                                        <div class="list-group-item px-0" style="border: none; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
                                             <div class="d-flex justify-content-between align-items-start gap-3">
                                                 <div>
-                                                    <h4 class="h6 mb-1"><?php echo htmlspecialchars($activity['eleve_nom']); ?></h4>
-                                                    <p class="text-muted mb-1"><?php echo htmlspecialchars($activity['raison']); ?></p>
-                                                    <small class="text-body-secondary"><?php echo date('d/m/Y H:i', strtotime($activity['date_ajout'])); ?></small>
+                                                    <h4 style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 4px;"><?php echo htmlspecialchars($activity['eleve_nom']); ?></h4>
+                                                    <p style="font-size: 12px; color: rgba(0,0,0,0.6); margin-bottom: 4px;"><?php echo htmlspecialchars($activity['raison']); ?></p>
+                                                    <small style="font-size: 11px; color: rgba(0,0,0,0.4);"><?php echo date('d/m/Y H:i', strtotime($activity['date_ajout'])); ?></small>
                                                 </div>
                                                 <div class="text-nowrap">
-                                                    <span class="badge bg-success-subtle text-success-emphasis px-3 py-2">+<?php echo $activity['points_ajoutes']; ?> pts</span>
+                                                    <span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 8px;">+<?php echo $activity['points_ajoutes']; ?> pts</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -519,14 +558,14 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <div id="addPointsModal" class="modal fade" tabindex="-1" aria-hidden="true" aria-labelledby="addPointsModalLabel">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title h5" id="addPointsModalLabel">Ajouter des points</h3>
+            <div class="modal-content" style="border: none; border-radius: 20px;">
+                <div class="modal-header" style="border: none; padding: 24px; padding-bottom: 16px;">
+                    <h3 class="modal-title" id="addPointsModalLabel" style="font-size: 16px; font-weight: 600; color: #1c1c1c;">Ajouter des points</h3>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer" data-modal-close></button>
                 </div>
                 <form method="POST" action="?page=class_view&id=<?php echo $class_id; ?>">
-                    <div class="modal-body">
-                        <p class="mb-4">Attribuer des points à <strong class="student-name"></strong>.</p>
+                    <div class="modal-body" style="padding: 24px; padding-top: 0;">
+                        <p style="font-size: 14px; color: rgba(0,0,0,0.6); margin-bottom: 20px;">Attribuer des points à <strong class="student-name" style="color: #1c1c1c;"></strong>.</p>
 
                         <input type="hidden" name="student_id" value="">
                         <input type="hidden" name="add_points" value="1">
@@ -534,8 +573,8 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <input type="hidden" name="selected_activity_id" id="selectedActivityId" value="">
 
                         <div class="mb-3">
-                            <label for="points" class="form-label">Nombre de points</label>
-                            <select name="points" id="points" class="form-select">
+                            <label for="points" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Nombre de points</label>
+                            <select name="points" id="points" class="form-select" style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                 <option value="5">5 points (Participation)</option>
                                 <option value="10">10 points (Bon travail)</option>
                                 <option value="15">15 points (Excellent travail)</option>
@@ -544,8 +583,8 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
 
                         <div class="mb-3">
-                            <label for="reason_select" class="form-label">Raison</label>
-                            <select name="reason_select" id="reason_select" class="form-select">
+                            <label for="reason_select" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Raison</label>
+                            <select name="reason_select" id="reason_select" class="form-select" style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                 <?php if (!empty($class_activities)): ?>
                                     <?php foreach ($class_activities as $ca): ?>
                                         <option value="<?php echo htmlspecialchars($ca['title'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($ca['title']); ?></option>
@@ -558,13 +597,13 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
 
                         <div class="mb-3" id="customReasonWrapper" style="display:none;">
-                            <label for="reason" class="form-label">Raison personnalisée</label>
-                            <input type="text" name="reason" id="reason" class="form-control" placeholder="Saisir la raison">
+                            <label for="reason" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Raison personnalisée</label>
+                            <input type="text" name="reason" id="reason" class="form-control" placeholder="Saisir la raison" style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-modal-close>Annuler</button>
-                        <button type="submit" class="btn btn-primary">Ajouter les points</button>
+                    <div class="modal-footer" style="border: none; padding: 24px; padding-top: 0; gap: 12px;">
+                        <button type="button" class="btn" data-bs-dismiss="modal" data-modal-close style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 10px 20px; font-size: 14px;">Annuler</button>
+                        <button type="submit" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 10px 20px; font-size: 14px;">Ajouter les points</button>
                     </div>
                 </form>
             </div>
@@ -574,28 +613,34 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- Delete All Students Modal -->
     <div id="deleteAllStudentsModal" class="modal fade" tabindex="-1" aria-hidden="true" aria-labelledby="deleteAllStudentsModalLabel">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title h5" id="deleteAllStudentsModalLabel">Supprimer tous les élèves</h3>
+            <div class="modal-content" style="border: none; border-radius: 20px;">
+                <div class="modal-header" style="border: none; padding: 24px; padding-bottom: 16px;">
+                    <h3 class="modal-title" id="deleteAllStudentsModalLabel" style="font-size: 16px; font-weight: 600; color: #1c1c1c;">Supprimer tous les élèves</h3>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <form method="POST" action="?page=class_view&id=<?php echo $class_id; ?>">
-                    <div class="modal-body">
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            <strong>Attention !</strong> Cette action est irréversible.
+                    <div class="modal-body" style="padding: 24px; padding-top: 0;">
+                        <div style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                            <div class="d-flex align-items-center">
+                                <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                <strong>Attention !</strong> Cette action est irréversible.
+                            </div>
                         </div>
-                        <p class="mb-3">Êtes-vous sûr de vouloir supprimer <strong>tous les élèves</strong> de la classe <strong><?php echo htmlspecialchars($classroom->nom); ?></strong> ?</p>
-                        <p class="text-muted mb-0">
-                            <i class="bi bi-info-circle me-1"></i>
+                        <p style="font-size: 14px; color: #1c1c1c; margin-bottom: 12px;">Êtes-vous sûr de vouloir supprimer <strong>tous les élèves</strong> de la classe <strong><?php echo htmlspecialchars($classroom->nom); ?></strong> ?</p>
+                        <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;">
+                            <svg class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                             Cette action supprimera également tout l'historique des points de ces élèves.
                         </p>
                         <input type="hidden" name="delete_all_students" value="1">
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash me-1"></i>Supprimer tous les élèves
+                    <div class="modal-footer" style="border: none; padding: 24px; padding-top: 0; gap: 12px;">
+                        <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 10px 20px; font-size: 14px;">Annuler</button>
+                        <button type="submit" class="btn" style="background: #ef4444; color: #fff; border: none; border-radius: 12px; padding: 10px 20px; font-size: 14px;">
+                            <svg class="me-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Supprimer tous les élèves
                         </button>
                     </div>
                 </form>
@@ -606,25 +651,31 @@ $class_activities = $class_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- Delete Individual Student Modal -->
     <div id="deleteStudentModal" class="modal fade" tabindex="-1" aria-hidden="true" aria-labelledby="deleteStudentModalLabel">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title h5" id="deleteStudentModalLabel">Supprimer l'élève</h3>
+            <div class="modal-content" style="border: none; border-radius: 20px;">
+                <div class="modal-header" style="border: none; padding: 24px; padding-bottom: 16px;">
+                    <h3 class="modal-title" id="deleteStudentModalLabel" style="font-size: 16px; font-weight: 600; color: #1c1c1c;">Supprimer l'élève</h3>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <form method="POST" action="?page=class_view&id=<?php echo $class_id; ?>">
-                    <div class="modal-body">
-                        <p class="mb-3">Êtes-vous sûr de vouloir supprimer l'élève <strong id="deleteStudentName"></strong> ?</p>
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            Cette action supprimera également tout l'historique des points de cet élève.
+                    <div class="modal-body" style="padding: 24px; padding-top: 0;">
+                        <p style="font-size: 14px; color: #1c1c1c; margin-bottom: 12px;">Êtes-vous sûr de vouloir supprimer l'élève <strong id="deleteStudentName"></strong> ?</p>
+                        <div style="background: #fef4e6; color: #f59e0b; border-radius: 12px; padding: 16px;">
+                            <div class="d-flex align-items-center">
+                                <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                <span style="font-size: 14px;">Cette action supprimera également tout l'historique des points de cet élève.</span>
+                            </div>
                         </div>
                         <input type="hidden" name="delete_student" value="1">
                         <input type="hidden" name="student_id" id="deleteStudentId" value="">
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash me-1"></i>Supprimer l'élève
+                    <div class="modal-footer" style="border: none; padding: 24px; padding-top: 0; gap: 12px;">
+                        <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 12px; padding: 10px 20px; font-size: 14px;">Annuler</button>
+                        <button type="submit" class="btn" style="background: #ef4444; color: #fff; border: none; border-radius: 12px; padding: 10px 20px; font-size: 14px;">
+                            <svg class="me-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Supprimer l'élève
                         </button>
                     </div>
                 </form>
