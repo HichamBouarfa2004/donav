@@ -1,0 +1,89 @@
+/* Profile Page */
+.profile-page {
+margin-top: 20px;
+    padding: 40px 20px;
+    animation: fadeIn 0.4s ease;
+}
+
+.page-title {
+    color: var(--primary-color);
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    border-bottom: 3px solid var(--primary-color);
+    display: inline-block;
+    padding-bottom: 6px;
+}
+
+.profile-card,
+.password-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 30px;
+    margin-bottom: 30px;
+    transition: var(--transition);
+}
+
+.profile-card:hover,
+.password-card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.card-title {
+    font-size: 20px;
+    color: var(--neutral-dark);
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+/* Input Fields */
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--neutral-dark);
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    transition: var(--transition);
+    background: #fff;
+    color: var(--neutral-dark);
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+/* Buttons inside cards */
+.profile-card .btn,
+.password-card .btn {
+    margin-top: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-page {
+        padding: 20px;
+    }
+
+    .page-title {
+        font-size: 22px;
+    }
+
+    .profile-card,
+    .password-card {
+        padding: 20px;
+    }
+}

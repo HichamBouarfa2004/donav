@@ -1,0 +1,94 @@
+{
+  "name": "No9ati - Gestion des Points Étudiants",
+  "short_name": "No9ati",
+  "description": "Application de gestion des points et certificats pour enseignants",
+  "start_url": "/no9ati/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "orientation": "any",
+  "scope": "/no9ati/",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml", 
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon-512x512.svg", 
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tableau de bord",
+      "short_name": "Dashboard",
+      "description": "Accéder au tableau de bord principal",
+      "url": "/no9ati/?page=dashboard",
+      "icons": [
+        {
+          "src": "assets/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mes Classes",
+      "short_name": "Classes",
+      "description": "Gérer mes classes",
+      "url": "/no9ati/?page=manage_classes",
+      "icons": [
+        {
+          "src": "assets/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Ajouter Élève",
+      "short_name": "Add Student",
+      "description": "Ajouter un nouvel élève",
+      "url": "/no9ati/?page=add_student",
+      "icons": [
+        {
+          "src": "assets/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/screenshots/desktop-dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tableau de bord desktop"
+    },
+    {
+      "src": "assets/screenshots/mobile-dashboard.png",
+      "sizes": "360x640",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tableau de bord mobile"
+    }
+  ]
+}
