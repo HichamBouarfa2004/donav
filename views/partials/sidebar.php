@@ -64,6 +64,16 @@
             Absences
         </a>
 
+        <a href="index.php?page=teams" class="nav-link d-flex align-items-center <?php echo ($_GET['page'] ?? '') === 'teams' ? 'active' : ''; ?>" style="color: #1c1c1c; padding: 8px 12px; border-radius: 12px; font-size: 14px; <?php echo ($_GET['page'] ?? '') === 'teams' ? 'background: rgba(0,0,0,0.04);' : ''; ?>">
+            <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            Équipes
+        </a>
+
         <a href="index.php?page=profile" class="nav-link d-flex align-items-center <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>" style="color: #1c1c1c; padding: 8px 12px; border-radius: 12px; font-size: 14px; <?php echo ($_GET['page'] ?? '') === 'profile' ? 'background: rgba(0,0,0,0.04);' : ''; ?>">
             <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -148,6 +158,16 @@
                     <line x1="12" y1="12" x2="15" y2="15"></line>
                 </svg>
                 Absences
+            </a>
+
+            <a href="index.php?page=teams" class="nav-link d-flex align-items-center <?php echo ($_GET['page'] ?? '') === 'teams' ? 'active' : ''; ?>" style="color: #1c1c1c; padding: 8px 12px; border-radius: 12px; font-size: 14px; <?php echo ($_GET['page'] ?? '') === 'teams' ? 'background: rgba(0,0,0,0.04);' : ''; ?>">
+                <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                Équipes
             </a>
 
             <a href="index.php?page=profile" class="nav-link d-flex align-items-center <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>" style="color: #1c1c1c; padding: 8px 12px; border-radius: 12px; font-size: 14px; <?php echo ($_GET['page'] ?? '') === 'profile' ? 'background: rgba(0,0,0,0.04);' : ''; ?>">

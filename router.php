@@ -12,6 +12,7 @@ class Router {
         'absences' => 'views/absences.php',
         'generate_certificate' => 'views/generate_certificate.php',
         'manage_classes' => 'views/manage_classes.php',
+        'teams' => 'views/teams.php',
         'profile' => 'views/profile.php',
         'logout' => 'views/logout.php',
         'error' => 'views/error.php'

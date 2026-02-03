@@ -370,10 +370,10 @@ if ($selected_class_id > 0) {
                 </div>
             <?php endif; ?>
 
-            <div class="row">
+            <div class="row g-4">
                 <!-- Class Selection Panel -->
                 <div class="col-12 col-lg-4 mb-4">
-                    <div class="card" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);">
+                    <div class="card h-100" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04); background: #fff;">
                         <div class="card-body p-4">
                             <h2 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin-bottom: 16px;">
                                 <svg class="me-2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -430,7 +430,7 @@ if ($selected_class_id > 0) {
 
                 <!-- Attendance Panel -->
                 <div class="col-12 col-lg-8">
-                    <div class="card" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);">
+                    <div class="card" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04); background: #fff;">
                         <?php if ($selected_class_id == 0): ?>
                             <!-- No class selected -->
                             <div class="card-body p-5 text-center">
@@ -578,7 +578,7 @@ if ($selected_class_id > 0) {
 
                     <!-- Submission History Table -->
                     <?php if ($selected_class_id > 0 && !empty($submission_history)): ?>
-                    <div class="card mt-4" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);">
+                    <div class="card mt-4" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04); background: #fff;">
                         <div class="card-body p-4">
                             <h3 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin-bottom: 16px;">
                                 <svg class="me-2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
