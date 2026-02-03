@@ -31,6 +31,19 @@ class Student {
         return false;
     }
 
+    public function studentExists($nom, $classe_id) {
+        $query = "SELECT COUNT(*) as count FROM " . $this->table_name . " 
+                  WHERE LOWER(TRIM(nom)) = LOWER(TRIM(:nom)) AND classe_id = :classe_id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':nom', $nom);
+        $stmt->bindParam(':classe_id', $classe_id);
+        $stmt->execute();
+        
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['count'] > 0;
+    }
+
     public function getByClass($class_id) {
         $query = "SELECT * FROM " . $this->table_name . " 
                   WHERE classe_id = :class_id 
