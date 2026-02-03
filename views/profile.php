@@ -53,7 +53,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include 'views/partials/sidebar.php'; ?>
     
     <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
-        <?php include 'views/partials/header.php'; ?>
+        <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+            <div class="container-fluid px-4">
+                <h1 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin: 0;">Mon Profil</h1>
+                <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 14px; font-weight: 500;">
+                        <?php echo strtoupper(substr($_SESSION['teacher_name'] ?? 'U', 0, 1)); ?>
+                    </div>
+                </div>
+            </div>
+        </nav>
 
         <main class="container-fluid" style="padding: 28px;">
             <div class="row mb-4">
