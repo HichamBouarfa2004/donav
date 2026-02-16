@@ -290,5 +290,146 @@ class Team {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row['count'];
     }
+
+    /**
+     * Batch create multiple teams at once
+     * Returns array of created team IDs or false on error
+     */
+    public function batchCreate($names, $class_id) {
+        $created = [];
+        try {
+            $this->conn->beginTransaction();
+            $query = "INSERT INTO " . $this->table_name . " (name, class_id) VALUES (:name, :class_id)";
+            $stmt = $this->conn->prepare($query);
+            
+            foreach ($names as $name) {
+                $name = htmlspecialchars(strip_tags(trim($name)));
+                if (empty($name)) continue;
+                $stmt->bindParam(':name', $name);
+                $stmt->bindParam(':class_id', $class_id);
+                $stmt->execute();
+                $created[] = $this->conn->lastInsertId();
+            }
+            
+            $this->conn->commit();
+            return $created;
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            return false;
+        }
+    }
+
+    /**
+     * Auto-distribute unassigned students evenly across all teams in a class
+     * Returns number of students distributed
+     */
+    public function autoDistribute($class_id) {
+        // Get teams for this class
+        $teams_stmt = $this->getByClass($class_id);
+        $teams = $teams_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($teams)) return 0;
+        
+        // Get unassigned students
+        $unassigned_stmt = $this->getUnassignedStudents($class_id);
+        $unassigned = $unassigned_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($unassigned)) return 0;
+        
+        // Build array of [team_id => current_count]
+        $team_counts = [];
+        foreach ($teams as $t) {
+            $team_counts[$t['id']] = intval($t['member_count']);
+        }
+        
+        $distributed = 0;
+        $query = "INSERT INTO " . $this->members_table . " (team_id, student_id) VALUES (:team_id, :student_id)";
+        $stmt = $this->conn->prepare($query);
+        
+        try {
+            $this->conn->beginTransaction();
+            
+            foreach ($unassigned as $s) {
+                // Find team with fewest members
+                $min_team_id = array_keys($team_counts, min($team_counts))[0];
+                
+                $stmt->bindParam(':team_id', $min_team_id);
+                $stmt->bindParam(':student_id', $s['id']);
+                $stmt->execute();
+                
+                $team_counts[$min_team_id]++;
+                $distributed++;
+            }
+            
+            $this->conn->commit();
+            return $distributed;
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            return 0;
+        }
+    }
+
+    /**
+     * Delete all teams for a class
+     */
+    public function deleteAllByClass($class_id) {
+        // CASCADE will remove team_members automatically
+        $query = "DELETE FROM " . $this->table_name . " WHERE class_id = :class_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':class_id', $class_id);
+        return $stmt->execute();
+    }
+
+    /**
+     * Remove all members from a team (unassign all)
+     */
+    public function clearMembers() {
+        $query = "DELETE FROM " . $this->members_table . " WHERE team_id = :team_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':team_id', $this->id);
+        return $stmt->execute();
+    }
+
+    /**
+     * Get all teams with members for a class in a single query (optimized)
+     */
+    public function getTeamsWithMembers($class_id) {
+        $query = "SELECT t.id as team_id, t.name as team_name, t.created_at as team_created,
+                         e.id as student_id, e.nom as student_name, tm.joined_at
+                  FROM " . $this->table_name . " t
+                  LEFT JOIN " . $this->members_table . " tm ON t.id = tm.team_id
+                  LEFT JOIN eleves e ON tm.student_id = e.id
+                  WHERE t.class_id = :class_id
+                  ORDER BY t.name ASC, e.nom ASC";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':class_id', $class_id);
+        $stmt->execute();
+        
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Group by team
+        $teams = [];
+        foreach ($rows as $row) {
+            $tid = $row['team_id'];
+            if (!isset($teams[$tid])) {
+                $teams[$tid] = [
+                    'id' => $tid,
+                    'name' => $row['team_name'],
+                    'created_at' => $row['team_created'],
+                    'members' => []
+                ];
+            }
+            if ($row['student_id']) {
+                $teams[$tid]['members'][] = [
+                    'id' => $row['student_id'],
+                    'nom' => $row['student_name'],
+                    'joined_at' => $row['joined_at']
+                ];
+            }
+        }
+        
+        return array_values($teams);
+    }
 }
 ?>

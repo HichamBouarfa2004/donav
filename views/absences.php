@@ -22,22 +22,24 @@ $is_resubmission = false;
 $classes_stmt = $classroom->getByTeacher($_SESSION['teacher_id']);
 $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get selected class (from POST or default to first class)
+// Get selected class from GET or POST
 $selected_class_id = 0;
 $students = [];
 $selected_class_name = '';
 $existing_statuses = [];
 $today_submission = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['select_class'])) {
-    $selected_class_id = intval($_POST['class_id'] ?? 0);
+if (isset($_GET['class_id'])) {
+    $selected_class_id = intval($_GET['class_id']);
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences'])) {
     $selected_class_id = intval($_POST['class_id'] ?? 0);
+} elseif (!empty($classes)) {
+    // Auto-select first class
+    $selected_class_id = $classes[0]['id'];
 }
 
 // If a class is selected, get its students
 if ($selected_class_id > 0) {
-    // Verify class ownership
     $valid_class = false;
     foreach ($classes as $c) {
         if ($c['id'] == $selected_class_id) {
@@ -91,7 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences']) && 
     try {
         $db->beginTransaction();
         
-        // Create or get submission record
         $submission_query = "INSERT INTO absence_submissions (class_id, submission_date, total_students, submitted_by)
                             VALUES (:class_id, :date, :total, :teacher_id)
                             ON DUPLICATE KEY UPDATE 
@@ -105,7 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences']) && 
             ':teacher_id' => $_SESSION['teacher_id']
         ]);
         
-        // Get the submission ID
         $get_submission = $db->prepare("SELECT id FROM absence_submissions WHERE class_id = :class_id AND submission_date = :date");
         $get_submission->execute([':class_id' => $selected_class_id, ':date' => $date]);
         $submission_id = $get_submission->fetchColumn();
@@ -115,7 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences']) && 
             $new_status = $statuses[$student_id] ?? 'present';
             $old_status = $existing_statuses[$student_id] ?? null;
             
-            // Count by status
             switch ($new_status) {
                 case 'present': $present_count++; break;
                 case 'absent': $absent_count++; break;
@@ -123,12 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences']) && 
                 case 'justified': $justified_count++; break;
             }
             
-            // Only update if status changed or new record
             if ($old_status !== $new_status) {
                 $query = "INSERT INTO student_absences (student_id, class_id, absence_date, statut, created_by)
                           VALUES (:student_id, :class_id, :absence_date, :statut, :created_by)
                           ON DUPLICATE KEY UPDATE statut = VALUES(statut), created_by = VALUES(created_by)";
-
                 $stmt = $db->prepare($query);
                 $stmt->execute([
                     ':student_id' => $student_id,
@@ -138,7 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences']) && 
                     ':created_by' => $_SESSION['teacher_id'],
                 ]);
                 
-                // Log the change
                 $log_query = "INSERT INTO absence_change_log (submission_id, student_id, old_status, new_status, changed_by)
                              VALUES (:submission_id, :student_id, :old_status, :new_status, :changed_by)";
                 $log_stmt = $db->prepare($log_query);
@@ -154,7 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences']) && 
             }
         }
         
-        // Update submission counts
         $update_counts = $db->prepare("UPDATE absence_submissions SET 
                                        present_count = :present, 
                                        absent_count = :absent, 
@@ -179,9 +174,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_presences']) && 
             $existing_statuses[$row['student_id']] = $row['statut'];
         }
         
-        // Refresh submission info
         $refresh_submission = $db->prepare("SELECT * FROM absence_submissions WHERE class_id = :class_id AND submission_date = :date");
-        $refresh_submission->execute([':class_id' => $selected_class_id, ':date' => $date]);
+        $refresh_submission->execute([':class_id' => $selected_class_id, ':date' => $today]);
         $today_submission = $refresh_submission->fetch(PDO::FETCH_ASSOC);
         $is_resubmission = true;
         
@@ -208,17 +202,29 @@ if ($selected_class_id > 0) {
                           FROM absence_submissions s 
                           WHERE s.class_id = :class_id 
                           ORDER BY s.submission_date DESC 
-                          LIMIT 10";
+                          LIMIT 7";
         $history_stmt = $db->prepare($history_query);
         $history_stmt->execute([':class_id' => $selected_class_id]);
         $submission_history = $history_stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        // Tables might not exist yet, ignore
         $submission_history = [];
     }
 }
-?>
 
+// Compute live stats
+$stat_present = count(array_filter($existing_statuses, fn($s) => $s === 'present'));
+$stat_absent = count(array_filter($existing_statuses, fn($s) => $s === 'absent'));
+$stat_late = count(array_filter($existing_statuses, fn($s) => $s === 'late'));
+$stat_justified = count(array_filter($existing_statuses, fn($s) => $s === 'justified'));
+$stat_unmarked = count($students) - count($existing_statuses);
+$stat_present += $stat_unmarked;
+
+// Day names for display
+$day_names_fr = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+$month_names_fr = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+$today_day = $day_names_fr[date('w')];
+$today_date = date('d') . ' ' . $month_names_fr[intval(date('m'))] . ' ' . date('Y');
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -226,110 +232,167 @@ if ($selected_class_id > 0) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
     <title>Gestion des Absences - No9ati</title>
-    
-    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/icons/icon-72x72.svg">
-    
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f9f9fa;
+        /* Searchable dropdown */
+        .sd-wrap { position: relative; min-width: 260px; max-width: 320px; }
+        .sd-toggle {
+            display: flex; align-items: center; gap: 8px; width: 100%;
+            padding: 8px 14px; border: 1px solid rgba(0,0,0,0.12); border-radius: 10px;
+            background: #fff; cursor: pointer; font-size: 13px; font-weight: 500; color: #1c1c1c;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .sd-toggle:hover { border-color: rgba(0,0,0,0.25); }
+        .sd-toggle:focus, .sd-wrap.open .sd-toggle {
+            border-color: #1c1c1c; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); outline: none;
+        }
+        .sd-toggle .sd-icon { margin-left: auto; color: rgba(0,0,0,0.3); transition: transform 0.2s; font-size: 11px; }
+        .sd-wrap.open .sd-toggle .sd-icon { transform: rotate(180deg); }
+        .sd-panel {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1); z-index: 100; overflow: hidden;
+            max-height: 260px;
+        }
+        .sd-wrap.open .sd-panel { display: block; }
+        .sd-search {
+            width: 100%; padding: 10px 14px; border: none; border-bottom: 1px solid rgba(0,0,0,0.06);
+            font-size: 13px; outline: none; background: transparent; color: #1c1c1c;
+        }
+        .sd-search::placeholder { color: rgba(0,0,0,0.3); }
+        .sd-list { max-height: 200px; overflow-y: auto; padding: 4px 0; }
+        .sd-list::-webkit-scrollbar { width: 4px; }
+        .sd-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        .sd-opt {
+            display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+            font-size: 13px; color: #555; cursor: pointer; transition: background 0.1s;
+            text-decoration: none;
+        }
+        .sd-opt:hover { background: rgba(0,0,0,0.04); color: #1c1c1c; }
+        .sd-opt.active { background: rgba(0,0,0,0.06); color: #1c1c1c; font-weight: 600; }
+        .sd-opt.active::before { content: '\2713'; font-size: 11px; color: #22c55e; font-weight: 700; }
+        .sd-opt.hidden { display: none; }
+        .sd-empty { padding: 16px 14px; text-align: center; font-size: 12px; color: rgba(0,0,0,0.3); }
+
+        /* Stats bar */
+        .stat-mini {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 8px;
+            font-size: 13px; font-weight: 600;
+        }
+        .stat-mini .dot {
+            width: 8px; height: 8px; border-radius: 50%;
         }
 
-        .hover-elevate {
-            transition: all 0.2s ease;
+        /* Student rows */
+        .student-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; border-radius: 12px;
+            border: 1.5px solid rgba(0,0,0,0.06); background: #fff;
+            transition: all 0.15s ease; gap: 12px;
+        }
+        .student-item:hover { border-color: rgba(0,0,0,0.12); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .student-item.is-absent { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.02); }
+        .student-item.is-late { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.02); }
+        .student-item.is-justified { border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.02); }
+
+        .student-avatar {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; flex-shrink: 0;
         }
 
-        .hover-elevate:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+        /* Segmented status control */
+        .status-seg {
+            display: inline-flex; border-radius: 10px; overflow: hidden;
+            border: 1.5px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02);
+            flex-shrink: 0;
+        }
+        .status-seg .seg-btn {
+            padding: 6px 10px; font-size: 12px; font-weight: 600;
+            border: none; background: transparent; color: rgba(0,0,0,0.35);
+            cursor: pointer; transition: all 0.15s ease;
+            display: flex; align-items: center; gap: 4px;
+            position: relative; white-space: nowrap;
+        }
+        .status-seg .seg-btn:not(:last-child)::after {
+            content: ''; position: absolute; right: 0; top: 20%; height: 60%;
+            width: 1px; background: rgba(0,0,0,0.08);
+        }
+        .status-seg .seg-btn:hover { color: rgba(0,0,0,0.6); background: rgba(0,0,0,0.03); }
+        .status-seg .seg-btn.active-present { background: #22c55e; color: #fff; }
+        .status-seg .seg-btn.active-present::after { display: none; }
+        .status-seg .seg-btn.active-absent { background: #ef4444; color: #fff; }
+        .status-seg .seg-btn.active-absent::after { display: none; }
+        .status-seg .seg-btn.active-late { background: #f59e0b; color: #fff; }
+        .status-seg .seg-btn.active-late::after { display: none; }
+        .status-seg .seg-btn.active-justified { background: #6366f1; color: #fff; }
+        .status-seg .seg-btn.active-justified::after { display: none; }
+
+        /* Responsive: stack on mobile */
+        @media (max-width: 640px) {
+            .student-item { flex-wrap: wrap; gap: 8px; }
+            .status-seg { width: 100%; }
+            .status-seg .seg-btn { flex: 1; justify-content: center; padding: 8px 6px; }
+            .seg-label { display: none; }
+        }
+        @media (min-width: 641px) {
+            .seg-icon-only { display: none; }
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        /* History mini table */
+        .history-mini td, .history-mini th {
+            padding: 10px 12px; font-size: 13px; vertical-align: middle;
+        }
+        .history-mini th {
+            font-weight: 600; color: rgba(0,0,0,0.45);
+            text-transform: uppercase; letter-spacing: 0.3px; font-size: 11px;
+            border-bottom: 2px solid rgba(0,0,0,0.06);
+        }
+        .history-mini tr { border-bottom: 1px solid rgba(0,0,0,0.04); }
+        .history-mini tr:last-child { border-bottom: none; }
+
+        /* Custom scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+        /* Card */
+        .abs-card {
+            border-radius: 16px; border: 1px solid rgba(0,0,0,0.06);
+            background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
 
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
+        /* Toast */
+        .abs-toast {
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            padding: 14px 22px; border-radius: 12px; display: flex; align-items: center; gap: 10px;
+            font-size: 14px; font-weight: 500; color: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            animation: slideInToast 0.3s ease;
         }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        .status-pill {
-            padding: 4px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-present { background-color: #22c55e; color: white; }
-        .status-absent { background-color: #ef4444; color: white; }
-
-        .class-card {
-            border-radius: 16px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .class-card:hover {
-            border-color: #1c1c1c;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .class-card.selected {
-            border-color: #1c1c1c;
-            background: rgba(0, 0, 0, 0.02);
-        }
-
-        .student-row {
-            border-radius: 12px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            transition: all 0.2s ease;
-        }
-
-        .student-row:hover {
-            border-color: rgba(0, 0, 0, 0.15);
-        }
-
-        .student-row.absent {
-            border-color: #ef4444;
-            background: rgba(239, 68, 68, 0.05);
-        }
-
-        .btn-toggle {
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s ease;
+        .abs-toast.success { background: #22c55e; }
+        .abs-toast.error { background: #ef4444; }
+        @keyframes slideInToast {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
-        <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+    <div class="main-content d-flex flex-column" style="padding-top: 88px;">
+        <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.08);">
             <div class="container-fluid px-4">
                 <button class="btn d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2">
@@ -338,433 +401,404 @@ if ($selected_class_id > 0) {
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
-                <h1 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin: 0;">Gestion des Absences</h1>
-                <div class="d-flex align-items-center">
-                    <div class="d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 14px; font-weight: 500;">
+                <div>
+                    <h1 style="font-size: 15px; font-weight: 600; color: #1c1c1c; margin: 0; line-height: 1.2;">Gestion des Absences</h1>
+                    <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;"><?php echo $today_day . ', ' . $today_date; ?></p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="index.php?page=absence_history<?php echo $selected_class_id > 0 ? '&class_id='.$selected_class_id : ''; ?>" 
+                       class="btn btn-sm" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px; font-size: 13px; color: #1c1c1c; padding: 6px 12px; text-decoration: none;">
+                        <i class="bi bi-clock-history me-1"></i> Historique
+                    </a>
+                    <div class="d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 13px; font-weight: 500;">
                         <?php echo strtoupper(substr($_SESSION['teacher_name'] ?? 'U', 0, 1)); ?>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <main class="container-fluid" style="padding: 28px;">
-            <!-- Page Header -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px;">Gestion des Absences</h1>
-                    <p style="font-size: 14px; color: rgba(0,0,0,0.5); margin: 0;">Sélectionnez une classe puis validez les présences du jour</p>
-                </div>
-            </div>
-
+        <main class="container-fluid" style="padding: 20px 24px;">
             <?php if (!empty($error)): ?>
-                <div class="alert alert-dismissible fade show mb-4" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
-                    <div class="d-flex align-items-center">
-                        <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                        <?php echo htmlspecialchars($error); ?>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+                <script>var _toastError = <?= json_encode($error) ?>;</script>
             <?php endif; ?>
 
-            <div class="row g-4">
-                <!-- Class Selection Panel -->
-                <div class="col-12 col-lg-4 mb-4">
-                    <div class="card h-100" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04); background: #fff;">
-                        <div class="card-body p-4">
-                            <h2 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin-bottom: 16px;">
-                                <svg class="me-2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                </svg>
-                                Sélectionner une classe
-                            </h2>
-
-                            <?php if (empty($classes)): ?>
-                                <div class="text-center py-4">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" style="margin-bottom: 16px;">
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="9" cy="7" r="4"></circle>
-                                    </svg>
-                                    <p style="color: rgba(0,0,0,0.4); margin-bottom: 16px;">Aucune classe disponible</p>
-                                    <a href="?page=manage_classes" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 8px; padding: 8px 16px; font-size: 14px;">
-                                        Créer une classe
-                                    </a>
-                                </div>
-                            <?php else: ?>
-                                <div class="d-flex flex-column gap-2">
-                                    <?php foreach ($classes as $c): ?>
-                                        <form method="POST" action="?page=absences" class="m-0">
-                                            <input type="hidden" name="select_class" value="1">
-                                            <input type="hidden" name="class_id" value="<?php echo $c['id']; ?>">
-                                            <button type="submit" class="class-card w-100 text-start p-3 bg-white <?php echo $selected_class_id == $c['id'] ? 'selected' : ''; ?>" style="border: 1px solid <?php echo $selected_class_id == $c['id'] ? '#1c1c1c' : 'rgba(0,0,0,0.08)'; ?>;">
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    <div class="d-flex align-items-center gap-3">
-                                                        <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: <?php echo $selected_class_id == $c['id'] ? '#1c1c1c' : 'rgba(0,0,0,0.04)'; ?>; color: <?php echo $selected_class_id == $c['id'] ? '#fff' : '#1c1c1c'; ?>; border-radius: 10px; font-size: 14px; font-weight: 600;">
-                                                            <?php echo strtoupper(substr($c['nom'], 0, 2)); ?>
-                                                        </div>
-                                                        <div>
-                                                            <p style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin: 0;"><?php echo htmlspecialchars($c['nom']); ?></p>
-                                                            <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;"><?php echo $classroom->getStudentCount($c['id']); ?> élèves</p>
-                                                        </div>
-                                                    </div>
-                                                    <?php if ($selected_class_id == $c['id']): ?>
-                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2">
-                                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                                        </svg>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </button>
-                                        </form>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
+            <!-- Class Selection Dropdown -->
+            <?php if (!empty($classes)): ?>
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span style="font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.35); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;">Classe</span>
+                <div class="sd-wrap" id="sdClassFilter">
+                    <button type="button" class="sd-toggle" onclick="sdToggle('sdClassFilter')">
+                        <?php
+                        $selected_class_label = 'Sélectionner une classe';
+                        foreach ($classes as $c) {
+                            if ($selected_class_id == $c['id']) { $selected_class_label = htmlspecialchars($c['nom']); break; }
+                        }
+                        echo $selected_class_label;
+                        ?>
+                        <span class="sd-icon">&#9662;</span>
+                    </button>
+                    <div class="sd-panel">
+                        <input type="text" class="sd-search" placeholder="Rechercher une classe..." oninput="sdFilter(this)">
+                        <div class="sd-list">
+                            <?php foreach ($classes as $c): ?>
+                                <a href="index.php?page=absences&class_id=<?php echo $c['id']; ?>"
+                                   class="sd-opt <?php echo $selected_class_id == $c['id'] ? 'active' : ''; ?>">
+                                    <?php echo htmlspecialchars($c['nom']); ?>
+                                    <span style="margin-left:auto;font-size:11px;color:rgba(0,0,0,0.35);"><?php echo $classroom->getStudentCount($c['id']); ?> élèves</span>
+                                </a>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
+            </div>
+            <?php endif; ?>
 
-                <!-- Attendance Panel -->
-                <div class="col-12 col-lg-8">
-                    <div class="card" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04); background: #fff;">
-                        <?php if ($selected_class_id == 0): ?>
-                            <!-- No class selected -->
-                            <div class="card-body p-5 text-center">
-                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1.5" style="margin-bottom: 20px;">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                                    <polyline points="10 9 9 9 8 9"></polyline>
-                                </svg>
-                                <h3 style="font-size: 18px; font-weight: 600; color: #1c1c1c; margin-bottom: 8px;">Sélectionnez une classe</h3>
-                                <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 0;">Choisissez une classe dans le panneau de gauche pour commencer la validation des présences.</p>
+            <?php if (empty($classes)): ?>
+                <!-- No classes -->
+                <div class="abs-card p-5 text-center">
+                    <i class="bi bi-building" style="font-size: 48px; color: rgba(0,0,0,0.12);"></i>
+                    <h3 style="font-size: 17px; font-weight: 600; color: #1c1c1c; margin: 16px 0 6px;">Aucune classe</h3>
+                    <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin-bottom: 16px;">Créez une classe pour commencer à gérer les absences.</p>
+                    <a href="index.php?page=manage_classes" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 10px; padding: 8px 20px; font-size: 14px;">
+                        <i class="bi bi-plus-lg me-1"></i> Créer une classe
+                    </a>
+                </div>
+            <?php elseif ($selected_class_id == 0): ?>
+                <!-- No class selected -->
+                <div class="abs-card p-5 text-center">
+                    <i class="bi bi-arrow-up-circle" style="font-size: 48px; color: rgba(0,0,0,0.12);"></i>
+                    <h3 style="font-size: 17px; font-weight: 600; color: #1c1c1c; margin: 16px 0 6px;">Sélectionnez une classe</h3>
+                    <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 0;">Choisissez une classe ci-dessus pour marquer les présences.</p>
+                </div>
+            <?php else: ?>
+                <!-- Stats Bar -->
+                <?php if (!empty($students)): ?>
+                <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+                    <div class="stat-mini" style="background: rgba(34,197,94,0.1); color: #16a34a;">
+                        <span class="dot" style="background: #22c55e;"></span>
+                        <span id="statPresent"><?php echo $stat_present; ?></span> Présents
+                    </div>
+                    <div class="stat-mini" style="background: rgba(239,68,68,0.1); color: #dc2626;">
+                        <span class="dot" style="background: #ef4444;"></span>
+                        <span id="statAbsent"><?php echo $stat_absent; ?></span> Absents
+                    </div>
+                    <div class="stat-mini" style="background: rgba(245,158,11,0.1); color: #d97706;">
+                        <span class="dot" style="background: #f59e0b;"></span>
+                        <span id="statLate"><?php echo $stat_late; ?></span> Retards
+                    </div>
+                    <div class="stat-mini" style="background: rgba(99,102,241,0.1); color: #4f46e5;">
+                        <span class="dot" style="background: #6366f1;"></span>
+                        <span id="statJustified"><?php echo $stat_justified; ?></span> Justifiés
+                    </div>
+                    <?php if ($is_resubmission): ?>
+                        <span style="font-size: 12px; color: #d97706; background: rgba(245,158,11,0.1); padding: 5px 12px; border-radius: 8px; font-weight: 500;">
+                            <i class="bi bi-arrow-repeat me-1"></i>Déjà enregistré aujourd'hui
+                        </span>
+                    <?php endif; ?>
+                    <div class="ms-auto d-flex gap-2">
+                        <div class="position-relative">
+                            <i class="bi bi-search position-absolute" style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: rgba(0,0,0,0.3);"></i>
+                            <input type="text" id="studentSearch" class="form-control form-control-sm" placeholder="Rechercher..." 
+                                   style="padding-left: 32px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); font-size: 13px; width: 180px; height: 34px;">
+                        </div>
+                        <button type="button" id="markAllPresentBtn" class="btn btn-sm" style="background: #22c55e; color: #fff; border-radius: 8px; font-size: 13px; font-weight: 500; padding: 6px 14px; border: none; white-space: nowrap;">
+                            <i class="bi bi-check-all me-1"></i>Tous présents
+                        </button>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Attendance Form -->
+                <form method="POST" action="index.php?page=absences&class_id=<?php echo $selected_class_id; ?>" id="attendanceForm">
+                    <input type="hidden" name="save_presences" value="1">
+                    <input type="hidden" name="class_id" value="<?php echo $selected_class_id; ?>">
+
+                    <div class="abs-card">
+                        <?php if (empty($students)): ?>
+                            <div class="p-5 text-center">
+                                <i class="bi bi-people" style="font-size: 48px; color: rgba(0,0,0,0.12);"></i>
+                                <p style="font-size: 14px; color: rgba(0,0,0,0.4); margin: 16px 0 0;">Aucun élève dans cette classe.</p>
                             </div>
                         <?php else: ?>
-                            <!-- Class selected - Show attendance form -->
-                            <div class="card-body p-0">
-                                <!-- Header -->
-                                <div class="p-4" style="border-bottom: 1px solid rgba(0,0,0,0.08);">
-                                    <div class="d-flex align-items-center justify-content-between mb-3">
-                                        <div>
-                                            <h2 style="font-size: 18px; font-weight: 600; color: #1c1c1c; margin-bottom: 4px;"><?php echo htmlspecialchars($selected_class_name); ?></h2>
-                                            <p style="font-size: 13px; color: rgba(0,0,0,0.5); margin: 0;">
-                                                <svg class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                                </svg>
-                                                <?php echo date('l d F Y'); ?>
-                                            </p>
-                                        </div>
-                                        <span class="badge" style="background: rgba(0,0,0,0.06); color: #1c1c1c; font-size: 13px; font-weight: 500; padding: 8px 12px; border-radius: 8px;">
-                                            <?php echo count($students); ?> élèves
-                                        </span>
-                                    </div>
+                            <div class="p-3 custom-scroll" style="max-height: calc(100vh - 310px); overflow-y: auto;">
+                                <div class="d-flex flex-column gap-2" id="studentsList">
+                                    <?php foreach ($students as $idx => $s): ?>
+                                        <?php 
+                                        $current_status = $existing_statuses[$s['id']] ?? 'present';
+                                        $avatar_colors = [
+                                            'present' => ['rgba(34,197,94,0.1)', '#22c55e'],
+                                            'absent' => ['rgba(239,68,68,0.1)', '#ef4444'],
+                                            'late' => ['rgba(245,158,11,0.1)', '#f59e0b'],
+                                            'justified' => ['rgba(99,102,241,0.1)', '#6366f1'],
+                                        ];
+                                        $ac = $avatar_colors[$current_status];
+                                        ?>
+                                        <div class="student-item <?php echo $current_status !== 'present' ? 'is-'.$current_status : ''; ?>" 
+                                             data-name="<?php echo strtolower($s['nom']); ?>" data-student-id="<?php echo $s['id']; ?>">
+                                            
+                                            <div class="d-flex align-items-center gap-3" style="min-width: 0;">
+                                                <span style="font-size: 12px; color: rgba(0,0,0,0.25); font-weight: 600; width: 20px; text-align: center; flex-shrink: 0;"><?php echo $idx + 1; ?></span>
+                                                <div class="student-avatar" id="avatar-<?php echo $s['id']; ?>" 
+                                                     style="background: <?php echo $ac[0]; ?>; color: <?php echo $ac[1]; ?>;">
+                                                    <?php echo strtoupper(substr($s['nom'], 0, 2)); ?>
+                                                </div>
+                                                <div style="min-width: 0;">
+                                                    <p style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                        <?php echo htmlspecialchars($s['nom']); ?>
+                                                    </p>
+                                                    <?php if (!empty($s['totalHeures'])): ?>
+                                                        <p style="font-size: 11px; color: rgba(0,0,0,0.35); margin: 0;"><?php echo intval($s['totalHeures']); ?>h d'absence cumulée</p>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
 
-                                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                                        <button type="button" class="btn" id="markAllPresentBtn" style="background: #22c55e; color: #fff; border-radius: 10px; padding: 8px 16px; font-size: 14px;">
-                                            <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
-                                            Tous présents
-                                        </button>
-                                        <div class="position-relative flex-grow-1" style="max-width: 280px;">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="2" class="position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%);">
-                                                <circle cx="11" cy="11" r="8"></circle>
-                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                            </svg>
-                                            <input type="text" id="studentSearch" class="form-control" placeholder="Rechercher..." style="padding-left: 40px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); font-size: 14px;">
+                                            <div class="status-seg" data-student-id="<?php echo $s['id']; ?>">
+                                                <button type="button" class="seg-btn <?php echo $current_status === 'present' ? 'active-present' : ''; ?>" data-status="present" title="Présent">
+                                                    <i class="bi bi-check-lg seg-icon-only"></i>
+                                                    <span class="seg-label">Présent</span>
+                                                </button>
+                                                <button type="button" class="seg-btn <?php echo $current_status === 'absent' ? 'active-absent' : ''; ?>" data-status="absent" title="Absent">
+                                                    <i class="bi bi-x-lg seg-icon-only"></i>
+                                                    <span class="seg-label">Absent</span>
+                                                </button>
+                                                <button type="button" class="seg-btn <?php echo $current_status === 'late' ? 'active-late' : ''; ?>" data-status="late" title="Retard">
+                                                    <i class="bi bi-clock seg-icon-only"></i>
+                                                    <span class="seg-label">Retard</span>
+                                                </button>
+                                                <button type="button" class="seg-btn <?php echo $current_status === 'justified' ? 'active-justified' : ''; ?>" data-status="justified" title="Justifié">
+                                                    <i class="bi bi-file-earmark-check seg-icon-only"></i>
+                                                    <span class="seg-label">Justifié</span>
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="status[<?php echo $s['id']; ?>]" id="status-<?php echo $s['id']; ?>" value="<?php echo $current_status; ?>">
                                         </div>
-                                    </div>
+                                    <?php endforeach; ?>
                                 </div>
+                            </div>
 
-                                <!-- Students List -->
-                                <form method="POST" action="?page=absences" id="attendanceForm">
-                                    <input type="hidden" name="save_presences" value="1">
-                                    <input type="hidden" name="class_id" value="<?php echo $selected_class_id; ?>">
-
-                                    <div class="p-4 custom-scrollbar" style="max-height: 450px; overflow-y: auto;">
-                                        <?php if (empty($students)): ?>
-                                            <div class="text-center py-4">
-                                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" style="margin-bottom: 16px;">
-                                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                                    <circle cx="9" cy="7" r="4"></circle>
-                                                </svg>
-                                                <p style="color: rgba(0,0,0,0.4); margin-bottom: 0;">Aucun élève dans cette classe</p>
-                                            </div>
-                                        <?php else: ?>
-                                            <div class="d-flex flex-column gap-3" id="studentsList">
-                                                <?php foreach ($students as $s): ?>
-                                                    <div class="student-row d-flex align-items-center justify-content-between p-3 hover-elevate" data-name="<?php echo strtolower($s['nom']); ?>" data-student-id="<?php echo $s['id']; ?>">
-                                                        <div class="d-flex align-items-center gap-3">
-                                                            <div class="student-avatar d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: <?php echo ($existing_statuses[$s['id']] ?? 'present') === 'absent' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'; ?>; color: <?php echo ($existing_statuses[$s['id']] ?? 'present') === 'absent' ? '#ef4444' : '#22c55e'; ?>; border-radius: 10px; font-size: 14px; font-weight: 600;">
-                                                                <?php echo strtoupper(substr($s['nom'], 0, 2)); ?>
-                                                            </div>
-                                                            <div>
-                                                                <p style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin: 0;"><?php echo htmlspecialchars($s['nom']); ?></p>
-                                                                <?php if (!empty($s['totalHeures'])): ?>
-                                                                    <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;"><?php echo intval($s['totalHeures']); ?>h d'absence</p>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        </div>
-
-                                                        <?php 
-                                                        $current_status = $existing_statuses[$s['id']] ?? 'present';
-                                                        $is_absent = $current_status === 'absent';
-                                                        ?>
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <span class="status-pill <?php echo $is_absent ? 'status-absent' : 'status-present'; ?>" id="badge-<?php echo $s['id']; ?>"><?php echo $is_absent ? 'Absent' : 'Présent'; ?></span>
-                                                            <button type="button" class="btn btn-toggle toggle-btn" data-student-id="<?php echo $s['id']; ?>" style="background: <?php echo $is_absent ? '#ef4444' : 'rgba(0,0,0,0.04)'; ?>; color: <?php echo $is_absent ? '#fff' : '#1c1c1c'; ?>; border: none;">
-                                                                <?php if ($is_absent): ?>
-                                                                    <svg class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                                    </svg>
-                                                                    Présent
-                                                                <?php else: ?>
-                                                                    <svg class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                                                        <circle cx="12" cy="7" r="4"></circle>
-                                                                        <line x1="18" y1="8" x2="23" y2="13"></line>
-                                                                        <line x1="23" y1="8" x2="18" y2="13"></line>
-                                                                    </svg>
-                                                                    Absent
-                                                                <?php endif; ?>
-                                                            </button>
-                                                            <input type="hidden" name="status[<?php echo $s['id']; ?>]" id="status-<?php echo $s['id']; ?>" value="<?php echo $current_status; ?>">
-                                                        </div>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <!-- Footer -->
-                                    <?php if (!empty($students)): ?>
-                                        <div class="p-4 d-flex align-items-center justify-content-between" style="background: rgba(0,0,0,0.02); border-top: 1px solid rgba(0,0,0,0.08);">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <span id="absentCount" style="font-size: 14px; color: rgba(0,0,0,0.6);">
-                                                    <?php echo count(array_filter($existing_statuses, fn($s) => $s === 'absent')); ?> absent(s)
-                                                </span>
-                                                <?php if ($is_resubmission): ?>
-                                                    <span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #d97706; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px;">
-                                                        <svg class="me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                            <path d="M1 4v6h6"></path>
-                                                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                                                        </svg>
-                                                        Modification
-                                                    </span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <button type="submit" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 10px; padding: 10px 20px; font-size: 14px;">
-                                                <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                                    <polyline points="7 3 7 8 15 8"></polyline>
-                                                </svg>
-                                                <?php echo $is_resubmission ? 'Mettre à jour' : 'Enregistrer'; ?>
-                                            </button>
-                                        </div>
-                                    <?php endif; ?>
-                                </form>
+                            <!-- Save Footer -->
+                            <div class="d-flex align-items-center justify-content-between p-3" style="border-top: 1px solid rgba(0,0,0,0.06);">
+                                <span style="font-size: 13px; color: rgba(0,0,0,0.45);">
+                                    <?php echo count($students); ?> élèves &middot; <?php echo htmlspecialchars($selected_class_name); ?>
+                                </span>
+                                <button type="submit" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 10px; padding: 9px 22px; font-size: 14px; font-weight: 500; border: none;">
+                                    <i class="bi bi-check2-circle me-1"></i>
+                                    <?php echo $is_resubmission ? 'Mettre à jour' : 'Enregistrer'; ?>
+                                </button>
                             </div>
                         <?php endif; ?>
                     </div>
+                </form>
 
-                    <!-- Submission History Table -->
-                    <?php if ($selected_class_id > 0 && !empty($submission_history)): ?>
-                    <div class="card mt-4" style="border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04); background: #fff;">
-                        <div class="card-body p-4">
-                            <h3 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin-bottom: 16px;">
-                                <svg class="me-2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
-                                Historique des soumissions
-                            </h3>
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0" style="font-size: 14px;">
-                                    <thead>
-                                        <tr style="border-bottom: 2px solid rgba(0,0,0,0.08);">
-                                            <th style="font-weight: 600; color: #1c1c1c; padding: 12px 8px;">Date</th>
-                                            <th style="font-weight: 600; color: #1c1c1c; padding: 12px 8px;">Total</th>
-                                            <th style="font-weight: 600; color: #1c1c1c; padding: 12px 8px;">Présents</th>
-                                            <th style="font-weight: 600; color: #1c1c1c; padding: 12px 8px;">Absents</th>
-                                            <th style="font-weight: 600; color: #1c1c1c; padding: 12px 8px;">Retards</th>
-                                            <th style="font-weight: 600; color: #1c1c1c; padding: 12px 8px;">Modifications</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($submission_history as $sub): ?>
-                                        <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
-                                            <td style="padding: 12px 8px; color: #1c1c1c;">
-                                                <?php 
-                                                $sub_date = new DateTime($sub['submission_date']);
-                                                echo $sub_date->format('d/m/Y');
-                                                ?>
-                                                <?php if ($sub['submission_date'] === date('Y-m-d')): ?>
-                                                    <span class="badge ms-1" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; font-size: 10px;">Aujourd'hui</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td style="padding: 12px 8px; color: rgba(0,0,0,0.6);"><?php echo $sub['total_students']; ?></td>
-                                            <td style="padding: 12px 8px;">
-                                                <span style="color: #22c55e; font-weight: 500;"><?php echo $sub['present_count'] ?? 0; ?></span>
-                                            </td>
-                                            <td style="padding: 12px 8px;">
-                                                <span style="color: #ef4444; font-weight: 500;"><?php echo $sub['absent_count'] ?? 0; ?></span>
-                                            </td>
-                                            <td style="padding: 12px 8px;">
-                                                <span style="color: #f59e0b; font-weight: 500;"><?php echo $sub['late_count'] ?? 0; ?></span>
-                                            </td>
-                                            <td style="padding: 12px 8px;">
-                                                <?php if ($sub['changes_count'] > 0): ?>
-                                                    <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #6366f1; font-size: 12px; font-weight: 500;">
-                                                        <?php echo $sub['changes_count']; ?> modif(s)
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span style="color: rgba(0,0,0,0.3);">-</span>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                <!-- Recent Submissions -->
+                <?php if (!empty($submission_history)): ?>
+                <div class="abs-card mt-3">
+                    <div class="p-3 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+                        <h3 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">
+                            <i class="bi bi-clock-history me-2" style="color: rgba(0,0,0,0.3);"></i>Dernières soumissions
+                        </h3>
+                        <a href="index.php?page=absence_history&class_id=<?php echo $selected_class_id; ?>" 
+                           style="font-size: 12px; color: rgba(0,0,0,0.4); text-decoration: none;">Voir tout &rarr;</a>
                     </div>
-                    <?php endif; ?>
+                    <div class="table-responsive">
+                        <table class="table history-mini mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-center">P</th>
+                                    <th class="text-center">A</th>
+                                    <th class="text-center">R</th>
+                                    <th class="text-center">J</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($submission_history as $sub): ?>
+                                <tr>
+                                    <td style="color: #1c1c1c; font-weight: 500;">
+                                        <?php 
+                                        $sub_date = new DateTime($sub['submission_date']);
+                                        echo $sub_date->format('d/m');
+                                        $sub_day = $day_names_fr[$sub_date->format('w')];
+                                        echo ' <span style="color:rgba(0,0,0,0.3);font-size:11px;">' . substr($sub_day, 0, 3) . '</span>';
+                                        ?>
+                                        <?php if ($sub['submission_date'] === date('Y-m-d')): ?>
+                                            <span style="background: rgba(34,197,94,0.15); color: #22c55e; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-left: 4px;">Auj.</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center" style="color: #22c55e; font-weight: 600;"><?php echo $sub['present_count'] ?? 0; ?></td>
+                                    <td class="text-center" style="color: #ef4444; font-weight: 600;"><?php echo $sub['absent_count'] ?? 0; ?></td>
+                                    <td class="text-center" style="color: #f59e0b; font-weight: 600;"><?php echo $sub['late_count'] ?? 0; ?></td>
+                                    <td class="text-center" style="color: #6366f1; font-weight: 600;"><?php echo $sub['justified_count'] ?? 0; ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+                <?php endif; ?>
+            <?php endif; ?>
         </main>
     </div>
 
-    <!-- Toast Container -->
-    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
-        <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
-            <div class="toast-body d-flex align-items-center gap-2" style="background: #22c55e; color: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 10px 40px rgba(34, 197, 94, 0.3);">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <span id="toastMessage" style="font-weight: 500;"><?php echo htmlspecialchars($message); ?></span>
-                <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
+    <!-- Toast -->
+    <?php if (!empty($message)): ?>
+    <div class="abs-toast success" id="absToast">
+        <i class="bi bi-check-circle-fill"></i>
+        <span><?php echo htmlspecialchars($message); ?></span>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #fff; opacity: 0.7; cursor: pointer; margin-left: 8px;"><i class="bi bi-x-lg"></i></button>
     </div>
+    <?php endif; ?>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            <?php if (!empty($message)): ?>
-            // Show success toast
-            var toastEl = document.getElementById('successToast');
-            var toast = new bootstrap.Toast(toastEl);
-            toast.show();
-            <?php endif; ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusColors = {
+            present:   { bg: 'rgba(34,197,94,0.1)',  color: '#22c55e', cls: 'active-present', itemCls: '' },
+            absent:    { bg: 'rgba(239,68,68,0.1)',   color: '#ef4444', cls: 'active-absent',  itemCls: 'is-absent' },
+            late:      { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b', cls: 'active-late',    itemCls: 'is-late' },
+            justified: { bg: 'rgba(99,102,241,0.1)',  color: '#6366f1', cls: 'active-justified', itemCls: 'is-justified' }
+        };
 
-            const markAllPresentBtn = document.getElementById('markAllPresentBtn');
-            const studentSearch = document.getElementById('studentSearch');
-            const studentRows = document.querySelectorAll('.student-row');
-            const absentCountElement = document.getElementById('absentCount');
-
-            // Initialize absent count on page load
-            updateAbsentCount();
-
-            // Apply existing statuses to row classes
-            studentRows.forEach(row => {
-                const studentId = row.dataset.studentId;
-                const statusInput = document.getElementById('status-' + studentId);
-                if (statusInput && statusInput.value === 'absent') {
-                    row.classList.add('absent');
-                }
-            });
-
-            if (markAllPresentBtn) {
-                // Mark all students as present
-                markAllPresentBtn.addEventListener('click', function() {
-                    studentRows.forEach(row => {
-                        const studentId = row.dataset.studentId;
-                        setStudentPresent(studentId, row);
-                    });
-                    updateAbsentCount();
-                });
-            }
-
-            // Toggle individual student status
-            document.querySelectorAll('.toggle-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const studentId = this.dataset.studentId;
-                    const statusInput = document.getElementById('status-' + studentId);
-                    const row = this.closest('.student-row');
-
-                    if (statusInput.value === 'present') {
-                        setStudentAbsent(studentId, row);
-                    } else {
-                        setStudentPresent(studentId, row);
-                    }
-                    updateAbsentCount();
+        // Status segmented control click
+        document.querySelectorAll('.status-seg').forEach(seg => {
+            seg.querySelectorAll('.seg-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const studentId = seg.dataset.studentId;
+                    const newStatus = this.dataset.status;
+                    setStudentStatus(studentId, newStatus);
                 });
             });
+        });
 
-            // Search functionality
-            if (studentSearch) {
-                studentSearch.addEventListener('input', function(e) {
-                    const query = e.target.value.toLowerCase();
-                    studentRows.forEach(row => {
-                        const studentName = row.dataset.name;
-                        row.style.display = studentName.includes(query) || query === '' ? 'flex' : 'none';
-                    });
+        function setStudentStatus(studentId, status) {
+            const input = document.getElementById('status-' + studentId);
+            const item = document.querySelector('.student-item[data-student-id="' + studentId + '"]');
+            const seg = item.querySelector('.status-seg');
+            const avatar = document.getElementById('avatar-' + studentId);
+            const info = statusColors[status];
+
+            input.value = status;
+
+            seg.querySelectorAll('.seg-btn').forEach(b => {
+                b.className = 'seg-btn';
+            });
+            seg.querySelector('[data-status="' + status + '"]').classList.add(info.cls);
+
+            item.className = 'student-item' + (info.itemCls ? ' ' + info.itemCls : '');
+
+            avatar.style.background = info.bg;
+            avatar.style.color = info.color;
+
+            updateStats();
+        }
+
+        // Mark All Present
+        const markAllBtn = document.getElementById('markAllPresentBtn');
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', function() {
+                document.querySelectorAll('.student-item').forEach(item => {
+                    const studentId = item.dataset.studentId;
+                    setStudentStatus(studentId, 'present');
                 });
-            }
+            });
+        }
 
-            function setStudentPresent(studentId, row) {
-                const badge = document.getElementById('badge-' + studentId);
-                const statusInput = document.getElementById('status-' + studentId);
-                const toggleBtn = row.querySelector('.toggle-btn');
-                const avatar = row.querySelector('.student-avatar');
+        // Search
+        const searchInput = document.getElementById('studentSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const q = this.value.toLowerCase();
+                document.querySelectorAll('.student-item').forEach(item => {
+                    const name = item.dataset.name;
+                    item.style.display = (!q || name.includes(q)) ? 'flex' : 'none';
+                });
+            });
+        }
 
-                badge.textContent = 'Présent';
-                badge.className = 'status-pill status-present';
-                statusInput.value = 'present';
-                toggleBtn.innerHTML = '<svg class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg> Absent';
-                toggleBtn.style.background = 'rgba(0,0,0,0.04)';
-                toggleBtn.style.color = '#1c1c1c';
-                row.classList.remove('absent');
-                avatar.style.background = 'rgba(34, 197, 94, 0.1)';
-                avatar.style.color = '#22c55e';
-            }
+        // Live stats update
+        function updateStats() {
+            const counts = { present: 0, absent: 0, late: 0, justified: 0 };
+            document.querySelectorAll('input[name^="status["]').forEach(input => {
+                const s = input.value;
+                if (counts.hasOwnProperty(s)) counts[s]++;
+            });
+            const el = (id) => document.getElementById(id);
+            if (el('statPresent')) el('statPresent').textContent = counts.present;
+            if (el('statAbsent'))  el('statAbsent').textContent = counts.absent;
+            if (el('statLate'))    el('statLate').textContent = counts.late;
+            if (el('statJustified')) el('statJustified').textContent = counts.justified;
+        }
 
-            function setStudentAbsent(studentId, row) {
-                const badge = document.getElementById('badge-' + studentId);
-                const statusInput = document.getElementById('status-' + studentId);
-                const toggleBtn = row.querySelector('.toggle-btn');
-                const avatar = row.querySelector('.student-avatar');
+        // Auto-dismiss toast
+        const toast = document.getElementById('absToast');
+        if (toast) {
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-12px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
 
-                badge.textContent = 'Absent';
-                badge.className = 'status-pill status-absent';
-                statusInput.value = 'absent';
-                toggleBtn.innerHTML = '<svg class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Présent';
-                toggleBtn.style.background = '#ef4444';
-                toggleBtn.style.color = '#fff';
-                row.classList.add('absent');
-                avatar.style.background = 'rgba(239, 68, 68, 0.1)';
-                avatar.style.color = '#ef4444';
-            }
-
-            function updateAbsentCount() {
-                if (absentCountElement) {
-                    const absentCount = document.querySelectorAll('input[name^="status"][value="absent"]').length;
-                    absentCountElement.textContent = absentCount + ' absent(s)';
-                }
+        // Keyboard shortcut: Ctrl+S to save
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                const form = document.getElementById('attendanceForm');
+                if (form) form.submit();
             }
         });
+    });
     </script>
 
-    <!-- Bootstrap JS -->
+    <script>
+    // Searchable Dropdown Logic
+    function sdToggle(id) {
+        const wrap = document.getElementById(id);
+        const wasOpen = wrap.classList.contains('open');
+        document.querySelectorAll('.sd-wrap.open').forEach(w => w.classList.remove('open'));
+        if (!wasOpen) {
+            wrap.classList.add('open');
+            const input = wrap.querySelector('.sd-search');
+            if (input) { input.value = ''; sdFilter(input); input.focus(); }
+        }
+    }
+    function sdFilter(input) {
+        const query = input.value.toLowerCase().trim();
+        const list = input.closest('.sd-panel').querySelector('.sd-list');
+        const opts = list.querySelectorAll('.sd-opt');
+        let visible = 0;
+        opts.forEach(opt => {
+            const text = opt.textContent.toLowerCase();
+            const match = !query || text.includes(query);
+            opt.classList.toggle('hidden', !match);
+            if (match) visible++;
+        });
+        let emptyEl = list.querySelector('.sd-empty');
+        if (visible === 0) {
+            if (!emptyEl) {
+                emptyEl = document.createElement('div');
+                emptyEl.className = 'sd-empty';
+                emptyEl.textContent = 'Aucun résultat';
+                list.appendChild(emptyEl);
+            }
+            emptyEl.style.display = '';
+        } else if (emptyEl) {
+            emptyEl.style.display = 'none';
+        }
+    }
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.sd-wrap')) {
+            document.querySelectorAll('.sd-wrap.open').forEach(w => w.classList.remove('open'));
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.sd-wrap.open').forEach(w => w.classList.remove('open'));
+        }
+    });
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

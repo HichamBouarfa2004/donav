@@ -543,9 +543,11 @@ class Controle {
     public function getInstancesByClass($class_id) {
         $query = "SELECT i.*, 
                          t.title as template_title, t.total_points,
+                         c.nom as class_name,
                          (SELECT COUNT(*) FROM " . $this->phases_table . " WHERE template_id = t.id) as phase_count
                   FROM " . $this->instances_table . " i
                   JOIN " . $this->templates_table . " t ON i.template_id = t.id
+                  JOIN classes c ON i.class_id = c.id
                   WHERE i.class_id = :class_id
                   ORDER BY i.created_at DESC";
         
@@ -806,12 +808,36 @@ class Controle {
             return null;
         }
 
+        // Check if this student is a member of any team in the class
+        $team_check = $this->conn->prepare(
+            "SELECT COUNT(*) as cnt FROM team_members tm 
+             JOIN teams t ON tm.team_id = t.id 
+             WHERE tm.student_id = :sid AND t.class_id = :cid"
+        );
+        $team_check->execute([':sid' => $student_id, ':cid' => $instance['class_id']]);
+        $student_in_team = $team_check->fetch(PDO::FETCH_ASSOC)['cnt'] > 0;
+
         $final_note = 0;
         $breakdown = [];
-        $all_graded = true; // Track if ALL phases have grades
+        $all_graded = true; // Track if ALL applicable phases have grades
         $graded_count = 0;
+        $applicable_phases = 0;
 
         foreach ($phases as $phase) {
+            // If phase is team-mode but student isn't in any team, skip it
+            if ($phase['grading_mode'] === 'team' && !$student_in_team) {
+                $breakdown[] = [
+                    'phase_id' => $phase['id'],
+                    'phase_title' => $phase['title'],
+                    'mode' => $phase['grading_mode'],
+                    'raw_note' => null,
+                    'points' => $phase['points'],
+                    'skipped' => true
+                ];
+                continue;
+            }
+            
+            $applicable_phases++;
             $note_data = $this->getStudentNoteForPhase($instance_id, $phase['id'], $student_id);
             $raw_note = $note_data ? $note_data['note'] : null;
             
@@ -833,13 +859,19 @@ class Controle {
             ];
         }
 
+        // If no applicable phases exist (all were team-mode and student has no team),
+        // treat as not gradeable
+        if ($applicable_phases == 0) {
+            $all_graded = false;
+        }
+
         return [
             'student_id' => $student_id,
             'final_note' => round($final_note, 2),
             'breakdown' => $breakdown,
             'all_graded' => $all_graded,
             'graded_phases' => $graded_count,
-            'total_phases' => count($phases)
+            'total_phases' => $applicable_phases
         ];
     }
 

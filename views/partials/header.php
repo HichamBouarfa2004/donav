@@ -16,15 +16,15 @@
             'class_view' => 'Vue de la classe',
             'add_student' => 'Ajouter un élève',
             'import_students' => 'Importer des élèves',
-            'points_log' => 'Historique des points',
             'absences' => 'Absences',
+            'absence_history' => 'Historique des Absences',
             'teams' => 'Équipes',
             'controles' => 'Contrôles',
             'controle_edit' => 'Modifier Contrôle',
             'controle_notes' => 'Saisie des Notes',
             'controle_results' => 'Résultats',
             'profile' => 'Mon profil',
-            'generate_certificate' => 'Génération de certificat'
+            'certificates' => 'Certificats'
         ];
         $current_page = $_GET['page'] ?? 'dashboard';
         echo ($page_titles[$current_page] ?? 'No9ati') . ' - No9ati';
@@ -81,23 +81,28 @@
 <body>
 
 <nav class="navbar navbar-expand-lg position-fixed" style="left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; background: #fff; border-bottom: 0.5px solid rgba(0,0,0,0.1);">
-    <div class="container-fluid d-flex justify-content-between align-items-center" style="padding: 20px 28px;">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-4">
         <!-- Left side: Mobile menu + Breadcrumb -->
         <div class="d-flex align-items-center gap-2">
-
-            
+            <button class="btn d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px; padding: 6px 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
             
             <!-- Breadcrumb -->
-            <div class="d-none d-md-flex align-items-center gap-2 ms-3" style="font-size: 14px; color: rgba(0,0,0,0.4);">
-                <span style="color: #1c1c1c;"><?php echo $page_titles[$current_page] ?? 'No9ati'; ?></span>
+            <div class="d-flex align-items-center gap-2" style="font-size: 14px; color: rgba(0,0,0,0.4);">
+                <span style="color: #1c1c1c; font-weight: 600;"><?php echo $page_titles[$current_page] ?? 'No9ati'; ?></span>
             </div>
         </div>
 
-        <!-- Right side: Search + Actions -->
-        <div class="d-flex align-items-center gap-4">
-
-            
-
+        <!-- Right side -->
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 14px; font-weight: 500;">
+                <?php echo strtoupper(substr($_SESSION['teacher_name'] ?? 'U', 0, 1)); ?>
+            </div>
         </div>
     </div>
 </nav>

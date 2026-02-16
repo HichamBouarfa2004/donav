@@ -43,9 +43,6 @@ class No9atiApp {
         // Form submissions
         this.initializeFormHandlers();
         
-        // Points management
-        this.initializePointsHandlers();
-        
         // File uploads
         this.initializeFileUploadHandlers();
     }
@@ -106,75 +103,6 @@ class No9atiApp {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             form.classList.remove('loading');
-        }
-    }
-
-    initializePointsHandlers() {
-        // Add points buttons
-        const addPointsBtns = document.querySelectorAll('.add-points-btn');
-        
-        addPointsBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const studentId = btn.dataset.studentId;
-                const studentName = btn.dataset.studentName;
-                this.showAddPointsModal(studentId, studentName);
-            });
-        });
-
-        // Certificate generation
-        const generateCertBtns = document.querySelectorAll('.generate-cert-btn');
-        
-        generateCertBtns.forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const studentId = btn.dataset.studentId;
-                await this.generateCertificate(studentId);
-            });
-        });
-    }
-
-    showAddPointsModal(studentId, studentName) {
-        const modal = document.getElementById('addPointsModal');
-        const form = modal.querySelector('form');
-        const studentNameSpan = modal.querySelector('.student-name');
-        
-        studentNameSpan.textContent = studentName;
-        form.querySelector('input[name="student_id"]').value = studentId;
-        
-        this.showModal('addPointsModal');
-    }
-
-    async generateCertificate(studentId) {
-        try {
-            this.showAlert('info', 'Génération du certificat en cours...');
-            
-            const response = await fetch('index.php?page=generate_certificate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `student_id=${studentId}`
-            });
-            
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `certificat_${studentId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                this.showAlert('success', 'Certificat généré et téléchargé!');
-            } else {
-                throw new Error('Erreur lors de la génération');
-            }
-        } catch (error) {
-            console.error('Certificate generation error:', error);
-            this.showAlert('danger', 'Erreur lors de la génération du certificat.');
         }
     }
 

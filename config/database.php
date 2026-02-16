@@ -47,18 +47,8 @@ class Database {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nom VARCHAR(100) NOT NULL,
                 classe_id INT NOT NULL,
-                points INT DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (classe_id) REFERENCES classes(id) ON DELETE CASCADE
-            )",
-            
-            "CREATE TABLE IF NOT EXISTS journal_points (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                eleve_id INT NOT NULL,
-                points_ajoutes INT NOT NULL,
-                raison VARCHAR(255) NOT NULL,
-                date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (eleve_id) REFERENCES eleves(id) ON DELETE CASCADE
             )"
         ];
 

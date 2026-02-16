@@ -16,31 +16,33 @@ $student = new Student($db);
 
 $class_id = $_GET['class_id'] ?? 0;
 
-// Verify class belongs to teacher
-
 $message = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['excel_file'])) {
+    // Get class_id from POST form data (the select dropdown)
+    $class_id = intval($_POST['classe_id'] ?? 0);
     
-    if (!$classroom->getById($class_id) || $classroom->enseignant_id != $_SESSION['teacher_id']) {
-        header('Location: index.php?page=dashboard');
-        exit;
-    }
+    if (!$class_id || !$classroom->getById($class_id) || $classroom->enseignant_id != $_SESSION['teacher_id']) {
+        $error = 'Classe invalide ou non autorisée.';
+    } else {
 
 
     $file = $_FILES['excel_file'];
 
     if ($file['error'] == 0) {
-        $allowed = ['xlsx', 'xls'];
+        $allowed = ['xlsx'];
         $filename = $file['name'];
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
         if (in_array($ext, $allowed)) {
             try {
                 $spreadsheet = SimpleXLSX::parse($file['tmp_name']);
-                // $worksheet = $spreadsheet->getActiveSheet();
-                // $rows = $worksheet->toArray();
+                
+                if ($spreadsheet === false) {
+                    throw new Exception(SimpleXLSX::parseError() ?: 'Impossible de lire le fichier Excel');
+                }
+                
                 $rows = $spreadsheet->rows();
 
                 $success = 0;
@@ -48,7 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['excel_file'])) {
 
                 $rows_count = count($rows);
                 $keys       = $rows[0] ?? [];
-                $keys       = array_map(fn($r) => strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', $r)), $keys);
+                $keys       = array_map(function($r) {
+                    $r = trim($r);
+                    // Remove BOM and normalize
+                    $r = preg_replace('/[\x{FEFF}\x{200B}]/u', '', $r);
+                    // Try iconv transliteration, fallback to manual accent removal
+                    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT', $r);
+                    if ($ascii === false) {
+                        $ascii = preg_replace('/[^a-zA-Z0-9]/', '', $r);
+                    }
+                    return strtolower($ascii);
+                }, $keys);
 
                 
                 // Check if required columns exist
@@ -102,22 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['excel_file'])) {
                 $error = "Erreur lors du traitement du fichier: " . $e->getMessage();
             }
         } else {
-            $error = "Format de fichier non supporté. Utilisez .xlsx ou .xls.";
+            $error = "Format de fichier non supporté. Utilisez un fichier .xlsx (Excel 2007+).";
         }
     } else {
         $error = "Erreur lors de l'upload du fichier.";
-    }   
+    }
+    } // end class validation else
 }
-
-
-
-require_once 'classes/ClassRoom.php';
-require_once 'classes/Student.php';
-
-$database = new Database();
-$db = $database->getConnection();
-
-$classroom = new ClassRoom($db);
 
 // Get teacher's classes
 $classes_stmt = $classroom->getByTeacher($_SESSION['teacher_id']);
@@ -136,9 +139,16 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
 <body style="background: #f9f9fa;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
+    <div class="main-content d-flex flex-column" style="padding-top: 88px;">
         <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.1);">
             <div class="container-fluid px-4">
+                <button class="btn d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
                 <h1 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin: 0;">Importer des élèves</h1>
                 <div class="d-flex align-items-center">
                     <div class="d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 14px; font-weight: 500;">
@@ -157,17 +167,11 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
             
             <?php if ($message): ?>
-                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
-                    <?php echo htmlspecialchars($message); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                </div>
+                <script>var _toastSuccess = <?= json_encode($message) ?>;</script>
             <?php endif; ?>
             
             <?php if ($error): ?>
-                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
-                    <?php echo htmlspecialchars($error); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                </div>
+                <script>var _toastError = <?= json_encode($error) ?>;</script>
             <?php endif; ?>
 
             <div class="row g-4">
@@ -195,9 +199,9 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="mb-4">
                                     <label for="excel_file" style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 8px; display: block;">Fichier Excel</label>
                                     <input type="file" name="excel_file" id="excel_file" class="form-control" 
-                                           accept=".xlsx,.xls" required style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
+                                           accept=".xlsx" required style="border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 12px 16px; font-size: 14px;">
                                     <div style="font-size: 12px; color: rgba(0,0,0,0.4); margin-top: 8px;">
-                                        Formats acceptés: .xlsx, .xls (maximum 5MB)
+                                        Format accepté: .xlsx - Excel 2007+ (maximum 5MB)
                                     </div>
                                 </div>
 
@@ -260,7 +264,7 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                             <ul class="list-unstyled" style="font-size: 12px; color: rgba(0,0,0,0.6);">
                                 <li class="mb-2">• Assurez-vous que la première ligne contient les en-têtes</li>
                                 <li class="mb-2">• Évitez les cellules vides dans les noms</li>
-                                <li class="mb-2">• Les élèves seront ajoutés avec 0 points</li>
+                                <li class="mb-2">• Les élèves seront ajoutés à la classe sélectionnée</li>
                                 <li class="mb-0">• Un rapport d'importation sera affiché après traitement</li>
                             </ul>
                         </div>

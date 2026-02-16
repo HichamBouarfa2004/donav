@@ -6,14 +6,16 @@ if (!isset($_SESSION['teacher_id'])) {
 
 require_once 'classes/ClassRoom.php';
 require_once 'classes/Student.php';
-require_once 'classes/PointSystem.php';
+require_once 'classes/Controle.php';
+require_once 'classes/Team.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
 $classroom = new ClassRoom($db);
 $student = new Student($db);
-$pointSystem = new PointSystem($db);
+$controle = new Controle($db);
+$team = new Team($db);
 
 // Get teacher's classes
 $classes_stmt = $classroom->getByTeacher($_SESSION['teacher_id']);
@@ -22,32 +24,56 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
 // Calculate statistics
 $total_classes = count($classes);
 $total_students = 0;
-$total_points = 0;
-$students_ready_for_certificate = 0;
+$class_details = [];
 
 foreach ($classes as $class) {
-    $student_count = $classroom->getStudentCount($class['id']);
-    $total_students += $student_count;
-    
-    $class_total_points = $pointSystem->getTotalPointsByClass($class['id']);
-    $total_points += $class_total_points;
-    
-    // Count students ready for certificate (100+ points)
-    $students_stmt = $student->getByClass($class['id']);
-    while ($student_data = $students_stmt->fetch(PDO::FETCH_ASSOC)) {
-        if ($student_data['points'] >= 100) {
-            $students_ready_for_certificate++;
+    $sc = $classroom->getStudentCount($class['id']);
+    $total_students += $sc;
+    $class_details[] = array_merge($class, ['student_count' => $sc]);
+}
+
+// Today's absences
+$today = date('Y-m-d');
+$today_absences = 0;
+$today_late = 0;
+$today_justified = 0;
+$today_submitted_classes = 0;
+foreach ($classes as $c) {
+    $sub_q = $db->prepare("SELECT id FROM absence_submissions WHERE class_id = :cid AND submission_date = :d");
+    $sub_q->execute([':cid' => $c['id'], ':d' => $today]);
+    if ($sub_q->fetch()) {
+        $today_submitted_classes++;
+        $abs_q = $db->prepare("SELECT statut FROM student_absences WHERE class_id = :cid AND absence_date = :d");
+        $abs_q->execute([':cid' => $c['id'], ':d' => $today]);
+        while ($row = $abs_q->fetch(PDO::FETCH_ASSOC)) {
+            if ($row['statut'] === 'absent') $today_absences++;
+            elseif ($row['statut'] === 'late') $today_late++;
+            elseif ($row['statut'] === 'justified') $today_justified++;
         }
     }
 }
 
-// Get recent activity
-$recent_activity = $pointSystem->getRecentActivity($_SESSION['teacher_id'], 7);
-$activities = $recent_activity->fetchAll(PDO::FETCH_ASSOC);
+// Evaluations stats  
+$instances = $controle->getInstancesByTeacher($_SESSION['teacher_id']);
+$total_evaluations = count($instances);
+$locked_evaluations = 0;
+$recent_instances = array_slice($instances, 0, 5);
+foreach ($instances as $inst) {
+    if ($inst['is_locked']) $locked_evaluations++;
+}
 
-// Get top students
-$top_students_stmt = $student->getTopStudents($_SESSION['teacher_id'], 5);
-$top_students = $top_students_stmt->fetchAll(PDO::FETCH_ASSOC);
+// Teams count
+$total_teams = 0;
+foreach ($classes as $c) {
+    $team_q = $db->prepare("SELECT COUNT(*) FROM teams WHERE class_id = :cid");
+    $team_q->execute([':cid' => $c['id']]);
+    $total_teams += $team_q->fetchColumn();
+}
+
+// French day/month
+$days_fr = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+$months_fr = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+$today_label = $days_fr[date('w')] . ' ' . date('j') . ' ' . $months_fr[intval(date('n'))] . ' ' . date('Y');
 ?>
 
 <!DOCTYPE html>
@@ -57,15 +83,46 @@ $top_students = $top_students_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tableau de bord - No9ati</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; }
+        .dash-card { border-radius: 16px; border: 1px solid rgba(0,0,0,0.06); background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: box-shadow 0.2s; }
+        .dash-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+        .stat-card { padding: 14px 12px; border-radius: 14px; border: 1px solid rgba(0,0,0,0.06); background: #fff; text-align: center; transition: transform 0.15s, box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.06); }
+        .stat-card .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 18px; }
+        .stat-card .stat-num { font-size: 24px; font-weight: 700; line-height: 1.1; }
+        .stat-card .stat-label { font-size: 12px; color: rgba(0,0,0,0.4); margin-top: 4px; font-weight: 500; }
+        .quick-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; text-decoration: none; color: #1c1c1c; border: 1px solid rgba(0,0,0,0.06); transition: all 0.15s; background: #fff; }
+        .quick-link:hover { border-color: #1c1c1c; color: #1c1c1c; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .quick-link .ql-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .eval-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+        .eval-item:last-child { border-bottom: none; }
+        .eval-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .class-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; transition: background 0.1s; }
+        .class-row:hover { background: rgba(0,0,0,0.02); }
+        .class-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    </style>
 </head>
-<body data-real-time-updates="true" style="background: #f9f9fa;">
+<body data-real-time-updates="true" style="background: #f8f9fb;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
-        <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+    <div class="main-content d-flex flex-column" style="padding-top: 78px;">
+        <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.08);">
             <div class="container-fluid px-4">
-                <h1 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin: 0;">Tableau de bord</h1>
+                <button class="btn d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div>
+                    <h1 style="font-size: 15px; font-weight: 600; color: #1c1c1c; margin: 0; line-height: 1.2;">Tableau de bord</h1>
+                    <p style="font-size: 12px; color: rgba(0,0,0,0.4); margin: 0;"><?php echo $today_label; ?></p>
+                </div>
                 <div class="d-flex align-items-center">
                     <div class="d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 14px; font-weight: 500;">
                         <?php echo strtoupper(substr($_SESSION['teacher_name'] ?? 'U', 0, 1)); ?>
@@ -74,226 +131,205 @@ $top_students = $top_students_stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </nav>
         
-        <main class="container-fluid" style="padding: 28px;">
-            <!-- Page Title Section -->
-            <div class="row mb-4">
-                <div class="col-12 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 style="font-size: 24px; font-weight: 600; color: #1c1c1c; margin-bottom: 4px;">Bonjour, <?php echo htmlspecialchars($_SESSION['teacher_name'] ?? 'Utilisateur'); ?></h1>
-                    </div>
-                    <div class="d-flex align-items-center gap-2" style="font-size: 14px; color: rgba(0,0,0,0.6);">
+        <main class="container-fluid" style="padding: 16px;">
+            <!-- Welcome -->
+            <div class="mb-3">
+                <h2 style="font-size: 20px; font-weight: 700; color: #1c1c1c; margin-bottom: 2px;">Bonjour, <?php echo htmlspecialchars($_SESSION['teacher_name'] ?? 'Utilisateur'); ?> 👋</h2>
+                <p style="font-size: 13px; color: rgba(0,0,0,0.45); margin: 0;">Voici un aperçu de votre activité.</p>
+            </div>
 
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
+            <!-- Stat Cards Row -->
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(99,102,241,0.1); color: #6366f1;"><i class="bi bi-folder2-open"></i></div>
+                        <div class="stat-num" style="color: #1c1c1c;"><?php echo $total_classes; ?></div>
+                        <div class="stat-label">Classes</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(34,197,94,0.1); color: #22c55e;"><i class="bi bi-people-fill"></i></div>
+                        <div class="stat-num" style="color: #1c1c1c;"><?php echo $total_students; ?></div>
+                        <div class="stat-label">Élèves</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(245,158,11,0.1); color: #f59e0b;"><i class="bi bi-journal-check"></i></div>
+                        <div class="stat-num" style="color: #1c1c1c;"><?php echo $total_evaluations; ?></div>
+                        <div class="stat-label">Évaluations</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(59,130,246,0.1); color: #3b82f6;"><i class="bi bi-people"></i></div>
+                        <div class="stat-num" style="color: #1c1c1c;"><?php echo $total_teams; ?></div>
+                        <div class="stat-label">Équipes</div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Statistics Cards (SnowUI Style) -->
-            <div class="row g-4 mb-4">
-                <div class="col-6 col-lg-3">
-                    <div class="card stat-card-purple h-100" style="border-radius: 20px; border: none;">
-                        <div class="card-body" style="padding: 24px;">
-                            <div style="font-size: 14px; color: #1c1c1c; margin-bottom: 8px;">Classes</div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div style="font-size: 24px; font-weight: 600; color: #1c1c1c;" data-stat="classes"><?php echo $total_classes; ?></div>
-                                <div class="d-flex align-items-center gap-1" style="font-size: 14px; color: #22c55e;">
-                                    <span>Total</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="7" y1="17" x2="17" y2="7"></line>
-                                        <polyline points="7 7 17 7 17 17"></polyline>
-                                    </svg>
+
+            <div class="row g-2 mb-3">
+                <!-- Today's Attendance Summary -->
+                <div class="col-md-6">
+                    <div class="dash-card p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 style="font-weight: 600; font-size: 14px; margin: 0;"><i class="bi bi-clock-history me-2 opacity-50"></i>Absences aujourd'hui</h6>
+                            <a href="index.php?page=absences" style="font-size: 12px; text-decoration: none; color: rgba(0,0,0,0.4);">Voir tout →</a>
+                        </div>
+                        <?php if ($today_submitted_classes > 0): ?>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <div style="padding: 8px 6px; border-radius: 10px; background: rgba(239,68,68,0.06); text-align: center;">
+                                        <div style="font-size: 20px; font-weight: 700; color: #ef4444;"><?php echo $today_absences; ?></div>
+                                        <div style="font-size: 11px; color: rgba(0,0,0,0.4);">Absents</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="padding: 8px 6px; border-radius: 10px; background: rgba(245,158,11,0.06); text-align: center;">
+                                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;"><?php echo $today_late; ?></div>
+                                        <div style="font-size: 11px; color: rgba(0,0,0,0.4);">Retards</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="padding: 8px 6px; border-radius: 10px; background: rgba(99,102,241,0.06); text-align: center;">
+                                        <div style="font-size: 20px; font-weight: 700; color: #6366f1;"><?php echo $today_justified; ?></div>
+                                        <div style="font-size: 11px; color: rgba(0,0,0,0.4);">Justifiés</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-6 col-lg-3">
-                    <div class="card stat-card-blue h-100" style="border-radius: 20px; border: none;">
-                        <div class="card-body" style="padding: 24px;">
-                            <div style="font-size: 14px; color: #1c1c1c; margin-bottom: 8px;">Élèves</div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div style="font-size: 24px; font-weight: 600; color: #1c1c1c;" data-stat="students"><?php echo $total_students; ?></div>
-                                <div class="d-flex align-items-center gap-1" style="font-size: 14px; color: #22c55e;">
-                                    <span>Total</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="7" y1="17" x2="17" y2="7"></line>
-                                        <polyline points="7 7 17 7 17 17"></polyline>
-                                    </svg>
-                                </div>
+                            <div style="font-size: 12px; color: rgba(0,0,0,0.35);">
+                                <i class="bi bi-check-circle me-1" style="color: #22c55e;"></i>
+                                <?php echo $today_submitted_classes; ?>/<?php echo $total_classes; ?> classe(s) pointée(s) aujourd'hui
                             </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-6 col-lg-3">
-                    <div class="card stat-card-green h-100" style="border-radius: 20px; border: none;">
-                        <div class="card-body" style="padding: 24px;">
-                            <div style="font-size: 14px; color: #1c1c1c; margin-bottom: 8px;">Points attribués</div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div style="font-size: 24px; font-weight: 600; color: #1c1c1c;" data-stat="points"><?php echo number_format($total_points); ?></div>
-                                <div class="d-flex align-items-center gap-1" style="font-size: 14px; color: #22c55e;">
-                                    <span>+15%</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="7" y1="17" x2="17" y2="7"></line>
-                                        <polyline points="7 7 17 7 17 17"></polyline>
-                                    </svg>
-                                </div>
+                        <?php else: ?>
+                            <div class="text-center py-3">
+                                <i class="bi bi-clipboard-check" style="font-size: 32px; color: rgba(0,0,0,0.1);"></i>
+                                <p style="font-size: 13px; color: rgba(0,0,0,0.35); margin: 8px 0 0;">Aucune classe pointée aujourd'hui.</p>
+                                <?php if ($total_classes > 0): ?>
+                                    <a href="index.php?page=absences&class_id=<?php echo $classes[0]['id']; ?>" class="btn btn-sm mt-2" style="background: #1c1c1c; color: #fff; border-radius: 8px; font-size: 12px;">Pointer maintenant</a>
+                                <?php endif; ?>
                             </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
-                
-                <div class="col-6 col-lg-3">
-                    <div class="card stat-card-orange h-100" style="border-radius: 20px; border: none;">
-                        <div class="card-body" style="padding: 24px;">
-                            <div style="font-size: 14px; color: #1c1c1c; margin-bottom: 8px;">Certificats prêts</div>
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div style="font-size: 24px; font-weight: 600; color: #1c1c1c;" data-stat="certificates"><?php echo $students_ready_for_certificate; ?></div>
-                                <div class="d-flex align-items-center gap-1" style="font-size: 14px; color: #22c55e;">
-                                    <span>+6%</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="7" y1="17" x2="17" y2="7"></line>
-                                        <polyline points="7 7 17 7 17 17"></polyline>
-                                    </svg>
+
+                <!-- Quick Actions -->
+                <div class="col-md-6">
+                    <div class="dash-card p-3 h-100">
+                        <h6 style="font-weight: 600; font-size: 14px; margin: 0 0 10px;"><i class="bi bi-lightning-charge me-2 opacity-50"></i>Actions rapides</h6>
+                        <div class="d-flex flex-column gap-2">
+                            <a href="index.php?page=absences" class="quick-link">
+                                <div class="ql-icon" style="background: rgba(239,68,68,0.08); color: #ef4444;"><i class="bi bi-clipboard-check"></i></div>
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 600;">Pointer les absences</div>
+                                    <div style="font-size: 11px; color: rgba(0,0,0,0.4);">Marquer les présences du jour</div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row g-4">
-                <!-- Classes Overview -->
-                <div class="col-12 col-xl-8">
-                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
-                        <div class="card-header d-flex justify-content-between align-items-center" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
-                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Mes Classes</h2>
-                            <a href="index.php?page=manage_classes" class="btn btn-sm" style="background: #1c1c1c; color: #fff; border-radius: 8px; font-size: 12px; padding: 4px 12px;">
-                                Gérer les classes
+                            </a>
+                            <a href="index.php?page=controles&tab=evaluations" class="quick-link">
+                                <div class="ql-icon" style="background: rgba(245,158,11,0.08); color: #f59e0b;"><i class="bi bi-journal-check"></i></div>
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 600;">Saisir des notes</div>
+                                    <div style="font-size: 11px; color: rgba(0,0,0,0.4);">Gérer les évaluations et notes</div>
+                                </div>
+                            </a>
+                            <a href="index.php?page=certificates" class="quick-link">
+                                <div class="ql-icon" style="background: rgba(34,197,94,0.08); color: #22c55e;"><i class="bi bi-award"></i></div>
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 600;">Générer des certificats</div>
+                                    <div style="font-size: 11px; color: rgba(0,0,0,0.4);">Télécharger les attestations</div>
+                                </div>
                             </a>
                         </div>
-                        <div class="card-body" style="padding: 24px; padding-top: 0;">
-                            <?php if (empty($classes)): ?>
-                                <div class="text-center py-5">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" style="margin-bottom: 16px;">
-                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                                    </svg>
-                                    <p style="color: rgba(0,0,0,0.4); margin-bottom: 16px;">Vous n'avez pas encore de classes.</p>
-                                    <a href="index.php?page=manage_classes" class="btn" style="background: #1c1c1c; color: #fff; border-radius: 12px; padding: 8px 16px; font-size: 14px;">
-                                        Créer une classe
-                                    </a>
-                                </div>
-                            <?php else: ?>
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Classe</th>
-                                                <th style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Élèves</th>
-                                                <th style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Points totaux</th>
-                                                <th class="text-end" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($classes as $class): ?>
-                                                <?php
-                                                $student_count = $classroom->getStudentCount($class['id']);
-                                                $class_points = $pointSystem->getTotalPointsByClass($class['id']);
-                                                ?>
-                                                <tr>
-                                                    <td style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1); font-size: 14px; color: #1c1c1c;">
-                                                        <strong><?php echo htmlspecialchars($class['nom']); ?></strong>
-                                                    </td>
-                                                    <td style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                                                        <span style="background: #edeefc; color: #6366f1; font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 8px;"><?php echo $student_count; ?></span>
-                                                    </td>
-                                                    <td style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                                                        <span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 8px;"><?php echo number_format($class_points); ?></span>
-                                                    </td>
-                                                    <td class="text-end" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                                                        <a href="index.php?page=class_view&id=<?php echo $class['id']; ?>" 
-                                                           class="btn btn-sm" style="background: #1c1c1c; color: #fff; border-radius: 8px; font-size: 12px; padding: 4px 12px;">
-                                                            Voir
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php endif; ?>
-                        </div>
                     </div>
                 </div>
-                
-                <!-- Top Students -->
-                <div class="col-12 col-xl-4">
-                    <div class="card h-100" style="background: #fff; border-radius: 20px; border: none;">
-                        <div class="card-header" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
-                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Top Élèves</h2>
+            </div>
+
+            <div class="row g-2">
+                <!-- Recent Evaluations -->
+                <div class="col-md-7">
+                    <div class="dash-card p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 style="font-weight: 600; font-size: 14px; margin: 0;"><i class="bi bi-journal-text me-2 opacity-50"></i>Évaluations récentes</h6>
+                            <a href="index.php?page=controles&tab=evaluations" style="font-size: 12px; text-decoration: none; color: rgba(0,0,0,0.4);">Voir tout →</a>
                         </div>
-                        <div class="card-body" style="padding: 24px; padding-top: 0;">
-                            <?php if (empty($top_students)): ?>
-                                <p class="text-center" style="color: rgba(0,0,0,0.4);">Aucun élève pour le moment.</p>
-                            <?php else: ?>
-                                <div class="list-group list-group-flush">
-                                    <?php foreach ($top_students as $index => $student_data): ?>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center" style="border: none; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 16px 0; background: transparent;">
-                                            <div>
-                                                <h6 style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 4px;"><?php echo htmlspecialchars($student_data['nom']); ?></h6>
-                                                <small style="font-size: 12px; color: rgba(0,0,0,0.4);"><?php echo htmlspecialchars($student_data['classe_nom']); ?></small>
-                                            </div>
-                                            <span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 8px;">
-                                                <?php echo $student_data['points']; ?> pts
+                        <?php if (empty($recent_instances)): ?>
+                            <div class="text-center py-4">
+                                <i class="bi bi-journal-x" style="font-size: 32px; color: rgba(0,0,0,0.1);"></i>
+                                <p style="font-size: 13px; color: rgba(0,0,0,0.35); margin: 8px 0 0;">Aucune évaluation créée.</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($recent_instances as $inst):
+                                $inst_stats = $controle->getStatistics($inst['id']);
+                                $is_complete = $inst_stats && $inst_stats['ungraded_count'] == 0 && $inst_stats['graded_count'] > 0;
+                                $pass_pct = $inst_stats && $inst_stats['graded_count'] > 0 ? round(($inst_stats['passed'] / $inst_stats['graded_count']) * 100) : null;
+                            ?>
+                                <div class="eval-item">
+                                    <div class="eval-dot" style="background: <?php echo $inst['is_locked'] ? '#6366f1' : ($is_complete ? '#22c55e' : '#f59e0b'); ?>;"></div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($inst['template_title']); ?></div>
+                                        <div style="font-size: 11px; color: rgba(0,0,0,0.4);">
+                                            <?php echo htmlspecialchars($inst['class_name']); ?>
+                                            <?php if (!empty($inst['session_name'])): ?> · <?php echo htmlspecialchars($inst['session_name']); ?><?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <?php if ($pass_pct !== null): ?>
+                                            <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: <?php echo $pass_pct >= 50 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.08)'; ?>; color: <?php echo $pass_pct >= 50 ? '#16a34a' : '#dc2626'; ?>;">
+                                                <?php echo $pass_pct; ?>%
                                             </span>
-                                        </div>
-                                    <?php endforeach; ?>
+                                        <?php endif; ?>
+                                        <?php if ($inst['is_locked']): ?>
+                                            <i class="bi bi-lock-fill" style="font-size: 12px; color: rgba(0,0,0,0.2);"></i>
+                                        <?php endif; ?>
+                                        <a href="index.php?page=controle_instance_results&id=<?php echo $inst['id']; ?>" style="font-size: 11px; text-decoration: none; color: #6366f1;">Résultats</a>
+                                    </div>
                                 </div>
-                            <?php endif; ?>
+                            <?php endforeach; ?>
+                            <div class="d-flex gap-3 mt-3 pt-2" style="border-top: 1px solid rgba(0,0,0,0.04); font-size: 12px; color: rgba(0,0,0,0.4);">
+                                <span><strong style="color: #1c1c1c;"><?php echo $total_evaluations; ?></strong> totales</span>
+                                <span><strong style="color: #6366f1;"><?php echo $locked_evaluations; ?></strong> verrouillées</span>
+                                <span><strong style="color: #22c55e;"><?php echo $total_evaluations - $locked_evaluations; ?></strong> en cours</span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- My Classes -->
+                <div class="col-md-5">
+                    <div class="dash-card p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 style="font-weight: 600; font-size: 14px; margin: 0;"><i class="bi bi-folder2 me-2 opacity-50"></i>Mes classes</h6>
+                            <a href="index.php?page=manage_classes" style="font-size: 12px; text-decoration: none; color: rgba(0,0,0,0.4);">Gérer →</a>
                         </div>
+                        <?php if (empty($class_details)): ?>
+                            <div class="text-center py-4">
+                                <i class="bi bi-folder-plus" style="font-size: 32px; color: rgba(0,0,0,0.1);"></i>
+                                <p style="font-size: 13px; color: rgba(0,0,0,0.35); margin: 8px 0 12px;">Aucune classe.</p>
+                                <a href="index.php?page=manage_classes" class="btn btn-sm" style="background: #1c1c1c; color: #fff; border-radius: 8px; font-size: 12px;">Créer une classe</a>
+                            </div>
+                        <?php else: ?>
+                            <?php 
+                            $cl_colors = ['#6366f1','#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#14b8a6'];
+                            foreach ($class_details as $ci => $cd): 
+                                $cc = $cl_colors[$ci % count($cl_colors)];
+                            ?>
+                                <a href="index.php?page=class_view&id=<?php echo $cd['id']; ?>" class="class-row text-decoration-none" style="color: #1c1c1c;">
+                                    <div class="class-avatar" style="background: <?php echo $cc; ?>15; color: <?php echo $cc; ?>;">
+                                        <?php echo strtoupper(mb_substr($cd['nom'], 0, 2)); ?>
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($cd['nom']); ?></div>
+                                    </div>
+                                    <span style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 8px; background: rgba(99,102,241,0.08); color: #6366f1;"><?php echo $cd['student_count']; ?> élèves</span>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
             
-            <!-- Recent Activity -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card" style="background: #fff; border-radius: 20px; border: none;">
-                        <div class="card-header d-flex justify-content-between align-items-center" style="background: transparent; border: none; padding: 24px; padding-bottom: 16px;">
-                            <h2 style="font-size: 14px; font-weight: 600; color: #1c1c1c; margin: 0;">Activité récente (7 derniers jours)</h2>
-                            <a href="index.php?page=points_log" class="btn btn-sm" style="background: rgba(0,0,0,0.04); color: #1c1c1c; border: none; border-radius: 8px; font-size: 12px; padding: 4px 12px;">
-                                Voir tout l'historique
-                            </a>
-                        </div>
-                        <div class="card-body" style="padding: 24px; padding-top: 0;">
-                            <?php if (empty($activities)): ?>
-                                <p class="text-center" style="color: rgba(0,0,0,0.4);">Aucune activité récente.</p>
-                            <?php else: ?>
-                                <div class="list-group list-group-flush">
-                                    <?php foreach ($activities as $activity): ?>
-                                        <div class="list-group-item" style="border: none; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 16px 0; background: transparent;">
-                                            <div class="d-flex justify-content-between align-items-start">
-                                                <div>
-                                                    <h6 style="font-size: 14px; font-weight: 500; color: #1c1c1c; margin-bottom: 4px;"><?php echo htmlspecialchars($activity['eleve_nom']); ?></h6>
-                                                    <p style="font-size: 14px; color: rgba(0,0,0,0.6); margin-bottom: 4px;"><?php echo htmlspecialchars($activity['raison']); ?> - 
-                                                       <?php echo htmlspecialchars($activity['classe_nom']); ?></p>
-                                                    <small style="font-size: 12px; color: rgba(0,0,0,0.4);"><?php echo date('d/m/Y H:i', strtotime($activity['date_ajout'])); ?></small>
-                                                </div>
-                                                <span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 8px;">
-                                                    +<?php echo $activity['points_ajoutes']; ?> pts
-                                                </span>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
     
@@ -301,7 +337,6 @@ $top_students = $top_students_stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="assets/js/main.js"></script>
     <script src="assets/js/pwa.js"></script>
     <script>
-        // Initialize No9ati App
         document.addEventListener('DOMContentLoaded', () => {
             window.no9atiApp = new No9atiApp();
         });

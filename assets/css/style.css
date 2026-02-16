@@ -567,14 +567,9 @@ h1.h3, .h3 {
 
 /* ===== Responsive Adjustments ===== */
 @media (max-width: 991.98px) {
-  :root {
-    --sidebar-width: 0px;
-  }
-  
   .main-content {
     margin-left: 0 !important;
-    padding-top: 88px !important;
-    padding: var(--spacing-16);
+    padding: var(--spacing-16) !important;
     padding-top: 88px !important;
   }
 
@@ -628,7 +623,7 @@ h1.h3, .h3 {
 /* ===== Mobile Offcanvas Sidebar ===== */
 .offcanvas {
   background: var(--color-white) !important;
-  width: var(--sidebar-width) !important;
+  width: 212px !important;
 }
 
 .offcanvas-header {

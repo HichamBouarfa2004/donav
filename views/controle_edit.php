@@ -121,7 +121,22 @@ include 'views/partials/header.php';
 include 'views/partials/sidebar.php';
 ?>
 
-<main class="main-content" style="margin-left: 212px; padding-top: 68px; min-height: 100vh; background: #fafafa;">
+<main class="main-content d-flex flex-column" style="padding-top: 88px;">
+    <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.08);">
+        <div class="container-fluid px-4">
+            <button class="btn d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <div>
+                <h1 style="font-size: 15px; font-weight: 600; color: #1c1c1c; margin: 0;">Évaluation</h1>
+            </div>
+            <div class="ms-auto"></div>
+        </div>
+    </nav>
     <div class="container-fluid p-4">
         <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-3">

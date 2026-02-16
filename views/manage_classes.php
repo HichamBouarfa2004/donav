@@ -116,9 +116,16 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
 <body style="background: #f9f9fa;">
     <?php include 'views/partials/sidebar.php'; ?>
     
-    <div class="main-content d-flex flex-column" style="margin-left: 212px; padding-top: 68px; min-height: 100vh;">
+    <div class="main-content d-flex flex-column" style="padding-top: 88px;">
         <nav class="navbar navbar-expand-lg" style="background: #fff; position: fixed; left: 212px; right: 0; top: 0; z-index: 1020; height: 68px; border-bottom: 1px solid rgba(0,0,0,0.1);">
             <div class="container-fluid px-4">
+                <button class="btn d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" style="background: rgba(0,0,0,0.04); border: none; border-radius: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
                 <h1 style="font-size: 16px; font-weight: 600; color: #1c1c1c; margin: 0;">Gestion des classes</h1>
                 <div class="d-flex align-items-center">
                     <div class="d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: #1c1c1c; color: #fff; border-radius: 50%; font-size: 14px; font-weight: 500;">
@@ -145,17 +152,11 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
             
             <?php if ($message): ?>
-                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border: none; border-radius: 12px; padding: 16px;">
-                    <?php echo htmlspecialchars($message); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                </div>
+                <script>var _toastSuccess = <?= json_encode($message) ?>;</script>
             <?php endif; ?>
             
             <?php if ($error): ?>
-                <div class="alert alert-dismissible fade show" role="alert" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 12px; padding: 16px;">
-                    <?php echo htmlspecialchars($error); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
-                </div>
+                <script>var _toastError = <?= json_encode($error) ?>;</script>
             <?php endif; ?>
             
             <div class="row">
@@ -183,7 +184,6 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 <th style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Nom de la classe</th>
                                                 <th class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Année</th>
                                                 <th class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Nombre d'élèves</th>
-                                                <th class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Points totaux</th>
                                                 <th class="text-center" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Date de création</th>
                                                 <th class="text-end" style="font-size: 12px; font-weight: 500; color: rgba(0,0,0,0.4); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.1); padding: 12px 16px;">Actions</th>
                                             </tr>
@@ -192,9 +192,6 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                                             <?php foreach ($classes as $class): ?>
                                                 <?php
                                                 $student_count = $classroom->getStudentCount($class['id']);
-                                                require_once 'classes/PointSystem.php';
-                                                $pointSystem = new PointSystem($db);
-                                                $total_points = $pointSystem->getTotalPointsByClass($class['id']);
                                                 $year_level_name = $class['year_level_name'] ?? 'Non défini';
                                                 ?>
                                                 <tr>
@@ -210,9 +207,6 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     </td>
                                                     <td class="text-center" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
                                                         <span style="background: #edeefc; color: #6366f1; font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 8px;"><?php echo $student_count; ?></span>
-                                                    </td>
-                                                    <td class="text-center" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
-                                                        <span style="background: rgba(34, 197, 94, 0.1); color: #22c55e; font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 8px;"><?php echo number_format($total_points); ?></span>
                                                     </td>
                                                     <td class="text-center" style="padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.1);">
                                                         <small style="font-size: 12px; color: rgba(0,0,0,0.4);"><?php echo date('d/m/Y', strtotime($class['created_at'])); ?></small>
@@ -411,7 +405,7 @@ $classes = $classes_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <input type="hidden" name="class_id" id="delete_class_id">
                         <p>Êtes-vous sûr de vouloir supprimer la classe <strong id="delete_class_name"></strong> ?</p>
                         <div class="alert alert-warning">
-                            <strong>Attention:</strong> Cette action supprimera également tous les élèves et leurs points associés à cette classe.
+                            <strong>Attention:</strong> Cette action supprimera également tous les élèves associés à cette classe.
                         </div>
                     </div>
                     <div class="modal-footer">
