@@ -26,8 +26,16 @@ class Teacher {
         $stmt->bindParam(":email", $this->email);
         $stmt->bindParam(":mot_de_passe", $this->mot_de_passe);
 
-        if($stmt->execute()) {
-            return true;
+        try {
+            if($stmt->execute()) {
+                return true;
+            }
+        } catch (PDOException $e) {
+            // Duplicate email (error code 23000 = integrity constraint violation)
+            if ($e->getCode() == 23000) {
+                return false;
+            }
+            throw $e;
         }
         return false;
     }

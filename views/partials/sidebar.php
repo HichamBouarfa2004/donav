@@ -1,7 +1,8 @@
 <div class="sidebar d-flex flex-column position-fixed vh-100 d-none d-lg-flex" style="width: 212px; z-index: 1030; background: #fff; border-right: 0.5px solid rgba(0,0,0,0.1);">
-    <div class="sidebar-header p-3 d-flex justify-content-center" style="border-bottom: 0.5px solid rgba(0,0,0,0.1);">
-        <a href="index.php?page=dashboard" class="text-decoration-none d-flex align-items-center justify-content-center" style="color: #1c1c1c;">
-            <img src="logo.png" alt="OFPPT" style="width: 80px; height: 80px; object-fit: contain;">
+    <div class="sidebar-header p-3" style="border-bottom: 0.5px solid rgba(0,0,0,0.1);">
+        <a href="index.php?page=dashboard" class="text-decoration-none d-flex align-items-center" style="color: #1c1c1c;">
+
+            <img src="logo.png" alt="OFPPT" style="width: 120px; height:120px;">
         </a>
     </div>
 
